@@ -1,0 +1,66 @@
+#Imports
+import re
+from typing import List
+from gherkin.parser import Parser
+from elop_tools import ElopConf
+
+parser = Parser()
+gd = parser.parse("/Users/matteo/Documents/demo.feature")
+
+STATE = 'opm'
+
+KW_MAP = {
+    'Given': re.compile(r"the (?P<sclass>\w+)?\s?signal (?P<signal>\w+) equal to (?P<svalue>\w+)"),
+    'When': re.compile(r"the (?P<sclass>\w+)?\s?signal (?P<signal>\w+) equal to (?P<svalue>\w+)"),
+    'Then': re.compile(r"the (?P<sclass>\w+)?\s?signal (?P<signal>\w+) is equal to (?P<svalue>\w+)"),
+}
+def get_parsed_step(step: str, rule: re.Pattern) -> dict:
+    '''Get the standard dictionary representation from a step text'''
+    g = rule.match(step)
+    assert g, "Wrong step text syntax:\n\t%s" % step
+    return g.groupdict()
+
+def get_collected_steps(scenario: dict) -> List[dict]:
+    last_keyword: str = None
+    res: List[dict] = []
+
+    for step in scenario['steps']:
+        last_keyword =  last_keyword if step['keywordType'] == 'Conjunction' else \
+            step['keyword'].replace(' ','')
+        res.append(get_parsed_step(step['text'],KW_MAP[last_keyword]))
+
+    return res
+
+def get_queue(steps: List[dict], elenv: ElopConf) -> list:
+    res: list = []
+    tasks: list = []
+    queue: list = []
+    # for i in range(len(steps)-1,-1,-1):
+    #     c_sgn = elenv.get_signal(steps[i]['signal'])
+    #     tasks.append(elenv.get_task(STATE,c_sgn['swc']))
+    for s in steps:
+        c_sgn = elenv.get_signal(s['signal'])
+        tasks.append(elenv.get_task(STATE,c_sgn['swc']))
+
+    j=len(tasks)-1
+    while j >= 1:
+        c_task = tasks[j]
+        for x in elenv.sch:
+            
+    
+
+def gherkin_to_plantUML(scenario: dict) -> str:
+    '''Generate a plant UML diagram string from a gherkin scenario'''
+    steps = get_collected_steps(scenario)
+
+
+def main():
+    elenv = ElopConf(icd_parh='/Users/matteo/Documents/icd.csv',
+                     sch_path='/Users/matteo/Documents/schm.csv',
+                     ssm_conf_path='/Users/matteo/Documents/ssm_conf.yaml')
+    steps = get_collected_steps(gd['feature']['children'][0]['scenario'])
+    close_tasks_case = get_queue(steps,elenv)
+    print(close_tasks_case)
+
+if __name__ == '__main__':
+    main()
