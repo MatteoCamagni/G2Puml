@@ -1,0 +1,8 @@
+opm:
+    task1:
+        - swc_egg_maker
+    task2:
+        - null
+    task3:
+        - swc_dinosaur
+        - swc_birds
