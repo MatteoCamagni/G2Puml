@@ -12,6 +12,7 @@ def get_existing_path(path:str) -> Path:
     return p
 
 class ElopConf():
+
     '''Class to handle the ELOP environment'''
     def __init__(self,
                  icd_parh: str,
@@ -36,9 +37,9 @@ class ElopConf():
     
     def __parse_icd(self,path:str) -> List[dict]:
         with get_existing_path(path).open('r') as f:
-                return [k for k in csv.DictReader(f, fieldnames=ICD_FIELDS)]
+            return list(csv.reader(f))
     
-    def __parse_sch(self,path:str) -> List[dict]:
+    def __parse_sch(self,path:str) -> dict:
         with get_existing_path(path).open('r') as f:
                 return [k for k in csv.DictReader(f, fieldnames=SCH_FIELDS)]
 
@@ -55,3 +56,12 @@ class ElopConf():
     def get_task(self, ssm_state: str, swc: str) -> str:
         s = self.__ssm[ssm_state]
         return next(filter(lambda x: swc in s[x], s), None)
+    
+    def get_swc_from_sgn(self,sgn: str) -> str:
+        swc_i = ICD_FIELDS.index('swc')
+        sgn_i = ICD_FIELDS.index('name')
+        for x in self.__icd:
+            print(x)
+            if x[sgn_i] == sgn:
+                 return x[swc_i]
+        return None

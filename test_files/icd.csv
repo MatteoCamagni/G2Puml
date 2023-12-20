@@ -1,3 +1,4 @@
-EGG,swc_egg_maker
-DINOSAUR,swc_dinosaur
-BIRD,swc_birds
+RAW_ECU_TEMPERATURE,MCAL
+ECU_TEMPERATURE,Temperature Measurement
+ERROR_TEMPERATURE,Error Collector
+ACS,SSM Core

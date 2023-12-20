@@ -1,66 +1,228 @@
 #Imports
 import re
+import yaml
 from typing import List
+from pathlib import Path
 from gherkin.parser import Parser
 from elop_tools import ElopConf
+from abc import abstractmethod
 
-parser = Parser()
-gd = parser.parse("/Users/matteo/Documents/demo.feature")
+class Model():
 
-STATE = 'opm'
+    skeleton = \
+    """@startuml
+    !theme plain
 
-KW_MAP = {
-    'Given': re.compile(r"the (?P<sclass>\w+)?\s?signal (?P<signal>\w+) equal to (?P<svalue>\w+)"),
-    'When': re.compile(r"the (?P<sclass>\w+)?\s?signal (?P<signal>\w+) equal to (?P<svalue>\w+)"),
-    'Then': re.compile(r"the (?P<sclass>\w+)?\s?signal (?P<signal>\w+) is equal to (?P<svalue>\w+)"),
-}
-def get_parsed_step(step: str, rule: re.Pattern) -> dict:
+    header
+        {header}
+    end header
+
+    legend top
+        {legend}
+    end legend
+
+    'Entities
+
+    box "Runners"
+    {runners}
+    end box
+
+    box "Targets"
+    {targets}
+    end box
+
+    box "Resources"
+    {resources}
+    end box
+
+    'Sequence actions
+    {core}
+
+    @enduml
+    """
+
+    def __init__(self,
+                 elenv: ElopConf,
+                 steps: List[dict],
+                 ) -> None:
+        self._env = elenv
+        self._steps = steps
+        self._runners = self._get_runners()
+        self._targets = self._get_targets()
+        self._resources = self._get_resources()
+
+    @abstractmethod
+    def _get_runners(self) -> list:
+        pass
+
+    @abstractmethod
+    def _get_targets(self) -> list:
+        pass
+
+    @abstractmethod
+    def _get_resources(self) -> list:
+        pass
+
+    @abstractmethod
+    def _get_puml_runners(self):
+        pass
+
+    @abstractmethod
+    def _get_puml_targets(self):
+        pass
+
+    @abstractmethod
+    def _get_puml_resources(self):
+        pass
+
+    @abstractmethod
+    def _get_puml_header(self):
+        pass
+
+    @abstractmethod
+    def _get_puml_legend(self):
+        pass
+
+    @abstractmethod
+    def _get_core(self):
+        pass
+
+    def _get_plant_uml(self) -> str:
+        return self.skeleton.format(
+            header = self._get_puml_header(),
+            legend = self._get_puml_legend(),
+            runners = self._get_puml_runners(),
+            targets = self._get_puml_targets(),
+            resources = self._get_puml_resources(),
+            core = self._get_puml_core(),
+        )
+    
+    def export_puml(self) -> None:
+        print(self._get_plant_uml())
+
+
+class AD_Model(Model):
+
+    queue_sk = '\tqueue "{runner}" as q{n}\n'
+    participant_sk = '\tparticipant "{swc}" as swc{n}\n'
+
+    def __init__(self,
+                 *args,
+                 **kwargs
+                 ) -> None:
+        super().__init__(*args,**kwargs)
+        self._swcs: set = self._get_swcs()
+        self._sgns: set = self._get_sgns()
+
+    def _get_runners(self):
+        return list(filter(lambda x: 'runner' in x, self._steps))
+
+    def _get_targets(self):
+        return list(filter(lambda x: 'swc' in x, self._steps))
+
+    def _get_resources(self):
+        return list(filter(lambda x: 'sgn' in x, self._steps))
+
+    def _get_swcs(self):
+        return set(map(lambda x: x['swc'],self._targets))
+
+    def _get_sgns(self):
+        res = set(map(lambda x: x['sgn'],self._targets))
+        #Update SWC
+        for sgn in res:
+            print(sgn)
+            swc = self._env.get_swc_from_sgn(sgn)
+            print(swc)
+            if swc != None:
+                self._swcs.add(swc)
+        return res
+        
+    def _get_puml_runners(self) -> str:
+        res = ''
+        i = 0
+        for r in self._runners:
+            res += self.queue_sk.format(runner=r['runner'],n=i)
+            i += 1
+
+        return res
+
+    def _get_puml_targets(self):
+        res = ''
+        i = 0
+        for c in self._swcs:
+            res += self.participant_sk.format(swc=c, n=i)
+            i += 1
+
+        return res
+
+    def _get_puml_resources(self):
+        return ''
+
+    def _get_puml_header(self):
+        return ''
+
+    def _get_puml_legend(self):
+        return ''
+
+    def _get_puml_core(self):
+        return ''
+
+def get_existing_path(path: str) -> Path:
+    p = Path(path)
+    assert p.exists(), 'Error: %s does not exists!' % path
+    return p
+
+def get_map(path: str) -> dict:
+    p = get_existing_path(path)
+    p = yaml.safe_load(p.open('r'))
+
+    #Compile rules
+    for k, v in p['g2p'].items():
+        t_v = []
+        for rule in v:
+            t_v.append(re.compile(rule))
+        p['g2p'][k] = t_v
+    
+    return p
+
+def get_parsed_step(step: str, rules: List[re.Pattern]) -> dict:
     '''Get the standard dictionary representation from a step text'''
-    g = rule.match(step)
-    assert g, "Wrong step text syntax:\n\t%s" % step
+    is_ok = False
+    for r in rules:
+        g = r.match(step)
+        if g:
+            is_ok = True
+            break
+    assert g, "Wrong step text syntax:\n\t%s\n\tCorrect syntax rule:\n\t%s" % (step, rules)
     return g.groupdict()
 
-def get_collected_steps(scenario: dict) -> List[dict]:
+def get_collected_steps(scenario: dict, map: dict) -> List[dict]:
     last_keyword: str = None
     res: List[dict] = []
 
     for step in scenario['steps']:
         last_keyword =  last_keyword if step['keywordType'] == 'Conjunction' else \
             step['keyword'].replace(' ','')
-        res.append(get_parsed_step(step['text'],KW_MAP[last_keyword]))
+        res.append(get_parsed_step(step['text'],map[last_keyword]))
 
     return res
-
-def get_queue(steps: List[dict], elenv: ElopConf) -> list:
-    res: list = []
-    tasks: list = []
-    queue: list = []
-    # for i in range(len(steps)-1,-1,-1):
-    #     c_sgn = elenv.get_signal(steps[i]['signal'])
-    #     tasks.append(elenv.get_task(STATE,c_sgn['swc']))
-    for s in steps:
-        c_sgn = elenv.get_signal(s['signal'])
-        tasks.append(elenv.get_task(STATE,c_sgn['swc']))
-
-    j=len(tasks)-1
-    while j >= 1:
-        c_task = tasks[j]
-        for x in elenv.sch:
-            
-    
 
 def gherkin_to_plantUML(scenario: dict) -> str:
     '''Generate a plant UML diagram string from a gherkin scenario'''
     steps = get_collected_steps(scenario)
 
-
 def main():
-    elenv = ElopConf(icd_parh='/Users/matteo/Documents/icd.csv',
-                     sch_path='/Users/matteo/Documents/schm.csv',
-                     ssm_conf_path='/Users/matteo/Documents/ssm_conf.yaml')
-    steps = get_collected_steps(gd['feature']['children'][0]['scenario'])
-    close_tasks_case = get_queue(steps,elenv)
-    print(close_tasks_case)
+    root = Path(__file__).parents[1] 
 
+    gd = Parser().parse("C:/Users/CMM2OFO/Documents/Repos/G2Puml/test_files/demo.feature")
+    map = get_map('C:/Users/CMM2OFO/Documents/Repos/G2Puml/src/maps/ad_data_flow.yaml')
+
+    elenv = ElopConf(icd_parh=root / "test_files" / 'icd.csv',
+                     sch_path='C:/Users/CMM2OFO/Documents/Repos/G2Puml/Strategy2.yaml',
+                     ssm_conf_path=root / "test_files" / 'ssm_conf.yaml')
+    steps = get_collected_steps(gd['feature']['children'][0]['scenario'], map['g2p'])
+
+    ad_model = AD_Model(elenv,steps)
+    print(ad_model.export_puml())
 if __name__ == '__main__':
     main()

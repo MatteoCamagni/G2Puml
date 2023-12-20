@@ -1,4 +1,8 @@
-0,task1,10
+queue:
+ - 
+    - 0
+    - task1
+    - 10
 100,task1,10
 200,task1,10
 210,task2,20
