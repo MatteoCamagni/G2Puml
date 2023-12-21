@@ -61,7 +61,6 @@ class ElopConf():
         swc_i = ICD_FIELDS.index('swc')
         sgn_i = ICD_FIELDS.index('name')
         for x in self.__icd:
-            print(x)
             if x[sgn_i] == sgn:
                  return x[swc_i]
         return None

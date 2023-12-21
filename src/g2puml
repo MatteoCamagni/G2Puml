@@ -1,12 +1,16 @@
 #Imports
 import re
 import yaml
+import plantuml
+import requests
 from typing import List
 from pathlib import Path
 from gherkin.parser import Parser
 from elop_tools import ElopConf
 from abc import abstractmethod
 
+
+RENDER_URL = 'http://www.plantuml.com/plantuml/img/'
 class Model():
 
     skeleton = \
@@ -44,23 +48,25 @@ class Model():
     def __init__(self,
                  elenv: ElopConf,
                  steps: List[dict],
+                 img_name: str,
                  ) -> None:
         self._env = elenv
         self._steps = steps
         self._runners = self._get_runners()
         self._targets = self._get_targets()
         self._resources = self._get_resources()
+        self._img_name = img_name.lower().replace(' ','_') + '.png'
 
     @abstractmethod
-    def _get_runners(self) -> list:
+    def _get_runners(self) -> set:
         pass
 
     @abstractmethod
-    def _get_targets(self) -> list:
+    def _get_targets(self) -> set:
         pass
 
     @abstractmethod
-    def _get_resources(self) -> list:
+    def _get_resources(self) -> set:
         pass
 
     @abstractmethod
@@ -98,68 +104,75 @@ class Model():
         )
     
     def export_puml(self) -> None:
-        print(self._get_plant_uml())
-
+        puml = plantuml.PlantUML(url=RENDER_URL)
+        img_url = puml.get_url(self._get_plant_uml())
+        img_data = requests.get(img_url).content
+        with open(self._img_name, 'wb') as handler:
+            handler.write(img_data)
 
 class AD_Model(Model):
 
-    queue_sk = '\tqueue "{runner}" as q{n}\n'
-    participant_sk = '\tparticipant "{swc}" as swc{n}\n'
+    header = \
+    """
+    \t|<b>Color| <#cyan> | <#gold> |
+    \t|<b>Description| SWIFC Get | SWIFC Set |
+    """
+
+    queue_sk = '\tqueue "{runner}" as {n}\n'
+    participant_sk = '\tparticipant "{swc}" as {n}\n'
+    entity_sk = '\tentity "{sgn}" as {n}\n'
 
     def __init__(self,
                  *args,
                  **kwargs
                  ) -> None:
         super().__init__(*args,**kwargs)
-        self._swcs: set = self._get_swcs()
-        self._sgns: set = self._get_sgns()
+
+    def __get_alias(self, label: str):
+        return label.lower().replace(' ','_')
 
     def _get_runners(self):
-        return list(filter(lambda x: 'runner' in x, self._steps))
+        a = set(map(lambda x: x.get('runner'), self._steps))
+        a.remove(None)
+        return a
 
     def _get_targets(self):
-        return list(filter(lambda x: 'swc' in x, self._steps))
-
+        a = set(map(lambda x: x.get('swc'), self._steps))
+        a.remove(None)
+        return a
+    
     def _get_resources(self):
-        return list(filter(lambda x: 'sgn' in x, self._steps))
-
-    def _get_swcs(self):
-        return set(map(lambda x: x['swc'],self._targets))
-
-    def _get_sgns(self):
-        res = set(map(lambda x: x['sgn'],self._targets))
-        #Update SWC
-        for sgn in res:
-            print(sgn)
-            swc = self._env.get_swc_from_sgn(sgn)
-            print(swc)
-            if swc != None:
-                self._swcs.add(swc)
-        return res
+        a = set()
+        for x in filter(lambda x: 'sgn' in x, self._steps):
+            sgn = x['sgn']
+            a.add(sgn)
+            self._targets.add(self._env.get_swc_from_sgn(sgn))
+        
+        return a
         
     def _get_puml_runners(self) -> str:
         res = ''
-        i = 0
-        for r in self._runners:
-            res += self.queue_sk.format(runner=r['runner'],n=i)
-            i += 1
+        for v in self._runners:
+            res += self.queue_sk.format(runner=v,n=self.__get_alias(v))
 
         return res
 
     def _get_puml_targets(self):
         res = ''
-        i = 0
-        for c in self._swcs:
-            res += self.participant_sk.format(swc=c, n=i)
-            i += 1
+        for v in self._targets:
+            res += self.participant_sk.format(swc=v,n=self.__get_alias(v))
 
         return res
 
     def _get_puml_resources(self):
-        return ''
+        res = ''
+        for v in self._resources:
+            res += self.entity_sk.format(sgn=v,n=self.__get_alias(v))
+
+        return res
 
     def _get_puml_header(self):
-        return ''
+        return self.header
 
     def _get_puml_legend(self):
         return ''
@@ -217,12 +230,15 @@ def main():
     gd = Parser().parse("C:/Users/CMM2OFO/Documents/Repos/G2Puml/test_files/demo.feature")
     map = get_map('C:/Users/CMM2OFO/Documents/Repos/G2Puml/src/maps/ad_data_flow.yaml')
 
+    out_f = gd['feature']['children'][0]['scenario']['name']
+
     elenv = ElopConf(icd_parh=root / "test_files" / 'icd.csv',
                      sch_path='C:/Users/CMM2OFO/Documents/Repos/G2Puml/Strategy2.yaml',
-                     ssm_conf_path=root / "test_files" / 'ssm_conf.yaml')
+                     ssm_conf_path=root / "test_files" / 'ssm_conf.yaml',
+                    )
     steps = get_collected_steps(gd['feature']['children'][0]['scenario'], map['g2p'])
 
-    ad_model = AD_Model(elenv,steps)
+    ad_model = AD_Model(elenv,steps,out_f)
     print(ad_model.export_puml())
 if __name__ == '__main__':
     main()
