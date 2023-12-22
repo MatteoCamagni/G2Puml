@@ -40,8 +40,11 @@ class Model():
     end box
 
     'Sequence actions
+    == Start Time ==
+
     {core}
 
+    == End Time ==
     @enduml
     """
 
@@ -52,22 +55,10 @@ class Model():
                  ) -> None:
         self._env = elenv
         self._steps = steps
-        self._runners = self._get_runners()
-        self._targets = self._get_targets()
-        self._resources = self._get_resources()
+        self._runners = None
+        self._targets = None
+        self._resources = None
         self._img_name = img_name.lower().replace(' ','_') + '.png'
-
-    @abstractmethod
-    def _get_runners(self) -> set:
-        pass
-
-    @abstractmethod
-    def _get_targets(self) -> set:
-        pass
-
-    @abstractmethod
-    def _get_resources(self) -> set:
-        pass
 
     @abstractmethod
     def _get_puml_runners(self):
@@ -105,7 +96,8 @@ class Model():
     
     def export_puml(self) -> None:
         puml = plantuml.PlantUML(url=RENDER_URL)
-        img_url = puml.get_url(self._get_plant_uml())
+        a = self._get_plant_uml()
+        img_url = puml.get_url(a)
         img_data = requests.get(img_url).content
         with open(self._img_name, 'wb') as handler:
             handler.write(img_data)
@@ -118,6 +110,29 @@ class AD_Model(Model):
     \t|<b>Description| SWIFC Get | SWIFC Set |
     """
 
+    get_sk = \
+    """
+    {csw1} --> {csw2} ++ #cyan: Get Request
+    {sgn} o-> {csw2}:  Signal retrieved
+    return Get Response
+    """
+    set_sk = \
+    """
+    {csw1} --> {csw1} ++ #gold: Set Request
+    {csw1} ->o {sgn} --: Set Signal
+    """
+
+    open_task = \
+        """autonumber {label}
+            [x-> q: {task} Start
+        autonumber stop
+        
+        """
+    
+
+    act_sk = "activate {x}"
+    deact_sk = "deactivate {x}"
+
     queue_sk = '\tqueue "{runner}" as {n}\n'
     participant_sk = '\tparticipant "{swc}" as {n}\n'
     entity_sk = '\tentity "{sgn}" as {n}\n'
@@ -127,29 +142,38 @@ class AD_Model(Model):
                  **kwargs
                  ) -> None:
         super().__init__(*args,**kwargs)
+        self.__set_core_attrs()
 
     def __get_alias(self, label: str):
         return label.lower().replace(' ','_')
 
-    def _get_runners(self):
-        a = set(map(lambda x: x.get('runner'), self._steps))
-        a.remove(None)
-        return a
+    def __set_core_attrs(self):
+        self._runners = []
+        self._targets = {'active':[],'passive':[]}
+        self._resources = []
 
-    def _get_targets(self):
-        a = set(map(lambda x: x.get('swc'), self._steps))
-        a.remove(None)
-        return a
-    
-    def _get_resources(self):
-        a = set()
-        for x in filter(lambda x: 'sgn' in x, self._steps):
-            sgn = x['sgn']
-            a.add(sgn)
-            self._targets.add(self._env.get_swc_from_sgn(sgn))
-        
-        return a
-        
+        for x in self._steps:
+            runx = x.get('runner')
+
+            if runx:
+                if runx not in self._runners:
+                    self._runners.append(runx)
+
+            swc = x.get('swc')
+            if swc:
+                if swc not in self._targets['active']:
+                    self._targets['active'].append(swc)
+
+            sgn = x.get('sgn')
+            if sgn:
+                if sgn not in self._resources:
+                    self._resources.append(sgn)
+                
+                swc = self._env.get_swc_from_sgn(sgn)
+                if swc not in self._targets['active'] and \
+                    swc not in self._targets['passive']:
+                    self._targets['passive'].append(swc)
+
     def _get_puml_runners(self) -> str:
         res = ''
         for v in self._runners:
@@ -159,8 +183,9 @@ class AD_Model(Model):
 
     def _get_puml_targets(self):
         res = ''
-        for v in self._targets:
-            res += self.participant_sk.format(swc=v,n=self.__get_alias(v))
+        for t in self._targets.values():
+            for v in t:
+                res += self.participant_sk.format(swc=v,n=self.__get_alias(v))
 
         return res
 
@@ -170,6 +195,71 @@ class AD_Model(Model):
             res += self.entity_sk.format(sgn=v,n=self.__get_alias(v))
 
         return res
+
+    def extract_core(self):
+        '''Loop on the steps to extract the main puml strucutre'''
+
+        core = []
+        queue_name = self.__get_alias(self._runners[0])
+        _last_task = {
+            'name': None,
+            'start': 0,
+            'run_i': 0,
+            'pos_i': 0,
+        }
+        _last_csw = None
+
+        for x in self._steps:          
+            kw = x.get('kw')
+            swc = x.get('swc')
+            sgn = x.get('sgn')
+            run = x.get('runner')
+            ssm = x.get('ssm')
+            cmd = x.get('cmd')
+
+            #Update last task
+            if swc:
+                c_task_name, c_task_run_i = self._env.get_task('opm',swc)
+                if not (_last_task['run_i'] >= c_task_run_i):
+                    _last_task['pos_i'] += 1
+                
+                a = self._env.get_task_scheduling(
+                    task_name=c_task_name,
+                    start_time=_last_task['start'],
+                    start_pos=_last_task['pos_i']
+                )
+
+                if _last_task['name'] != c_task_name:
+                    if not _last_task['name']:
+                        lbl = "<b>[T01]"
+                    else:
+                        lbl = "resume"
+                
+                    core.append(self.open_task.format(label=lbl,task=c_task_name))
+                    core.append(self.act_sk.format(x=queue_name))
+
+                _last_task['name'] = c_task_name
+                _last_task['start'] = a[0]
+                _last_task['run_i'] = c_task_run_i
+                _last_task['pos_i'] = a[1]
+
+            #Check if the step opens an SWC operation
+            if kw == 'When':
+                if _last_csw != swc:
+                    if _last_csw:
+                        core.append(self.deact_sk.format(x=_last_csw))
+                    core.append(self.act_sk.format(x=swc))
+            
+            if swc:
+                _last_csw = swc
+
+            if _last_csw:
+                core.append(self.deact_sk.format(x=_last_csw))
+            
+        core.append(self.deact_sk.format(x=queue_name))
+
+        print(core)
+
 
     def _get_puml_header(self):
         return self.header
@@ -216,13 +306,11 @@ def get_collected_steps(scenario: dict, map: dict) -> List[dict]:
     for step in scenario['steps']:
         last_keyword =  last_keyword if step['keywordType'] == 'Conjunction' else \
             step['keyword'].replace(' ','')
-        res.append(get_parsed_step(step['text'],map[last_keyword]))
+        d = get_parsed_step(step['text'],map[last_keyword])
+        d.update({'kw':last_keyword})
+        res.append(d)
 
     return res
-
-def gherkin_to_plantUML(scenario: dict) -> str:
-    '''Generate a plant UML diagram string from a gherkin scenario'''
-    steps = get_collected_steps(scenario)
 
 def main():
     root = Path(__file__).parents[1] 
@@ -239,6 +327,8 @@ def main():
     steps = get_collected_steps(gd['feature']['children'][0]['scenario'], map['g2p'])
 
     ad_model = AD_Model(elenv,steps,out_f)
-    print(ad_model.export_puml())
+    #ad_model.export_puml()
+    ad_model.extract_core()
+
 if __name__ == '__main__':
     main()

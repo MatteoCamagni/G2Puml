@@ -1,8 +1,12 @@
 opm:
-    task1:
-        - swc_egg_maker
-    task2:
+    Task_1:
+        - SSM Core
+    Task_2:
         - null
-    task3:
-        - swc_dinosaur
-        - swc_birds
+    Task_3:
+        - null
+    Task_4:
+        - null
+    Task_5:
+        - Temperature Measurement
+        - Temperature Monitoring

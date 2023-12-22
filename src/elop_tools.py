@@ -41,7 +41,7 @@ class ElopConf():
     
     def __parse_sch(self,path:str) -> dict:
         with get_existing_path(path).open('r') as f:
-                return [k for k in csv.DictReader(f, fieldnames=SCH_FIELDS)]
+            return next(yaml.safe_load_all(f), None)
 
     def __parse_ssm(self,path:str) -> dict:
         with get_existing_path(path).open('r') as f:
@@ -50,12 +50,25 @@ class ElopConf():
     def get_signal(self,sgn: str) -> dict:
         return next(filter(lambda x: x['name'] == sgn, self.__icd), None)
     
-    def get_task_scheduling(self, task: str) -> dict:
-        return next(filter(lambda x: x['task'] == task, self.__sch), None)
+    def get_task_scheduling(self, task_name: str, start_time: int = 0, start_pos: int = 0) -> tuple:
+        start_time = start_time % self.__sch['defs']['LEW']
+        start_pos = start_pos % len(self.__sch['queue'])
+        _time_offset = start_time // self.__sch['defs']['LEW']
+        for i in range(start_pos, len(self.__sch['queue'])):
+            x = self.__sch['queue'][i]
+            if  x[0] >= start_time and x[1] == task_name:
+                return (x[0]+_time_offset,i)
+        raise Exception('end')
 
-    def get_task(self, ssm_state: str, swc: str) -> str:
+    def get_task(self, ssm_state: str, swc: str) -> tuple:
         s = self.__ssm[ssm_state]
-        return next(filter(lambda x: swc in s[x], s), None)
+        for k,v in s.items():
+            i = 0
+            for t in v:
+                if t == swc:
+                    return (k, i)
+                i += 1
+        return (None, None)
     
     def get_swc_from_sgn(self,sgn: str) -> str:
         swc_i = ICD_FIELDS.index('swc')

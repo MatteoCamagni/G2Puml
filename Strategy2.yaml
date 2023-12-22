@@ -28,6 +28,7 @@ defs:
     Task_5:
       freq: 100000
       max_d: 150
+  LEW: 100000
 queue:
 - - 0
   - Task_1
