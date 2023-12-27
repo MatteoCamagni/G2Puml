@@ -123,15 +123,14 @@ class AD_Model(Model):
     """
 
     open_task = \
-        """autonumber {label}
-            [x-> q: {task} Start
-        autonumber stop
-        
         """
+autonumber {label}
+    [x-> q: {task} Start
+autonumber stop\n\n"""
     
 
-    act_sk = "activate {x}"
-    deact_sk = "deactivate {x}"
+    act_sk = "activate {x}\n"
+    deact_sk = "deactivate {x}\n"
 
     queue_sk = '\tqueue "{runner}" as {n}\n'
     participant_sk = '\tparticipant "{swc}" as {n}\n'
@@ -143,6 +142,8 @@ class AD_Model(Model):
                  ) -> None:
         super().__init__(*args,**kwargs)
         self.__set_core_attrs()
+        self.__act_items = []
+        self.__act_tabs = 0
 
     def __get_alias(self, label: str):
         return label.lower().replace(' ','_')
@@ -196,8 +197,42 @@ class AD_Model(Model):
 
         return res
 
+    def _get_puml_new_task(self, label: str, task: str, runner: str) -> str:
+        return self._get_puml_deactivate_all() + \
+            self.open_task.format(label = label, task = task) + \
+            self._get_puml_activation(runner)
+            
+    
+    def _get_puml_activation(self,item: str) -> str:
+        item = self.__get_alias(item)
+        self.__act_tabs += 1
+        self.__act_items.insert(0,item)
+        res = "\t"*self.__act_tabs + self.act_sk.format(x= item)
+        return res
+
+    def _get_puml_deactivation(self,item: str) -> str:
+        item = self.__get_alias(item)
+        try:
+            self.__act_items.remove(item)
+            res = "\t"*self.__act_tabs + self.deact_sk.format(x=item)
+            self.__act_tabs -= 1
+        except:
+            res = ""
+        
+        return res
+
+    def _get_puml_deactivate_all(self) -> str:
+        res = ""
+        for item in self.__act_items:
+            res += "\t"*self.__act_tabs + self.deact_sk.format(x=item) + "\n"
+            self.__act_tabs -= 1
+
+        self.__act_items = []
+        self.__act_tabs = 0
+        return res
+    
     def extract_core(self):
-        '''Loop on the steps to extract the main puml strucutre'''
+        '''Loop on the steps to extract the main puml structure'''
 
         core = []
         queue_name = self.__get_alias(self._runners[0])
@@ -220,7 +255,7 @@ class AD_Model(Model):
             #Update last task
             if swc:
                 c_task_name, c_task_run_i = self._env.get_task('opm',swc)
-                if not (_last_task['run_i'] >= c_task_run_i):
+                if _last_task['name'] != c_task_name or _last_task['run_i'] >= c_task_run_i:
                     _last_task['pos_i'] += 1
                 
                 a = self._env.get_task_scheduling(
@@ -231,34 +266,30 @@ class AD_Model(Model):
 
                 if _last_task['name'] != c_task_name:
                     if not _last_task['name']:
-                        lbl = "<b>[T01]"
+                        lbl = '"<b>[T01]"'
                     else:
                         lbl = "resume"
-                
-                    core.append(self.open_task.format(label=lbl,task=c_task_name))
-                    core.append(self.act_sk.format(x=queue_name))
+
+                    if _last_csw:
+                        core.append(self._get_puml_deactivation(_last_csw))                
+                    core.append(self._get_puml_new_task(label=lbl,task=c_task_name, runner=queue_name))
 
                 _last_task['name'] = c_task_name
                 _last_task['start'] = a[0]
                 _last_task['run_i'] = c_task_run_i
                 _last_task['pos_i'] = a[1]
 
-            #Check if the step opens an SWC operation
-            if kw == 'When':
-                if _last_csw != swc:
-                    if _last_csw:
-                        core.append(self.deact_sk.format(x=_last_csw))
-                    core.append(self.act_sk.format(x=swc))
-            
-            if swc:
+                #Check if the step opens an SWC operation
+                if kw == 'When':
+                    if _last_csw != swc:
+                        if _last_csw:
+                            core.append(self._get_puml_deactivation(_last_csw))
+                        core.append(self._get_puml_activation(swc))
+                
                 _last_csw = swc
 
-            if _last_csw:
-                core.append(self.deact_sk.format(x=_last_csw))
-            
-        core.append(self.deact_sk.format(x=queue_name))
-
-        print(core)
+        core.append(self._get_puml_deactivate_all())
+        print("\n".join(core))
 
 
     def _get_puml_header(self):

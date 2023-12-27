@@ -54,12 +54,12 @@ class ElopConf():
         start_time = start_time % self.__sch['defs']['LEW']
         start_pos = start_pos % len(self.__sch['queue'])
         _time_offset = start_time // self.__sch['defs']['LEW']
-        for i in range(start_pos, len(self.__sch['queue'])):
-            x = self.__sch['queue'][i]
+        for i in range(start_pos, 2*len(self.__sch['queue'])):
+            x = self.__sch['queue'][i % len(self.__sch['queue'])]
             if  x[0] >= start_time and x[1] == task_name:
-                return (x[0]+_time_offset,i)
-        raise Exception('end')
-
+                break
+        return (x[0]+_time_offset,i)
+            
     def get_task(self, ssm_state: str, swc: str) -> tuple:
         s = self.__ssm[ssm_state]
         for k,v in s.items():
