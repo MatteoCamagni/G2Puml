@@ -1,7 +1,7 @@
 g2p:
   Given:
-    - 'the (?P<runner>.*) during the SSM\.(?P<ssm>\w+) state'
+    g1: 'the (?P<runner>.*) during the SSM\.(?P<ssm>\w+) state'
   When:
-    - 'the (?P<swc>.*) reads the (?P<sgn>\w+) signal'
+    w1: 'the (?P<swc>.*) reads the (?P<sgn>\w+) signal'
   Then:
-    - 'it shall (evaluate the (?P<sgn>\w+) signal)|(execute the (?P<cmd>\w+) command)'
+    t1: 'it shall (evaluate the (?P<sgn>\w+) signal)|(execute the (?P<cmd>\w+) command)'

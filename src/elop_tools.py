@@ -63,11 +63,9 @@ class ElopConf():
     def get_task(self, ssm_state: str, swc: str) -> tuple:
         s = self.__ssm[ssm_state]
         for k,v in s.items():
-            i = 0
-            for t in v:
-                if t == swc:
+            for i in range(0,len(v)):
+                if v[i] == swc:
                     return (k, i)
-                i += 1
         return (None, None)
     
     def get_swc_from_sgn(self,sgn: str) -> str:

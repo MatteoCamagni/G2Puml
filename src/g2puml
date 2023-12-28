@@ -11,6 +11,21 @@ from abc import abstractmethod
 
 
 RENDER_URL = 'http://www.plantuml.com/plantuml/img/'
+
+class TaskHandler():
+    def __init__(self):
+        self.prev_task = None
+        self.order = 0
+        self.start = 0
+        self.cursor = 0
+    
+    def update_cursor(self) -> None:
+        self.cursor += 1
+
+    def update_task(self, new_tsk: str, new_order: int) -> None:
+        self.prev_task = new_tsk
+        self.order = new_order
+
 class Model():
 
     skeleton = \
@@ -101,6 +116,8 @@ class Model():
         img_data = requests.get(img_url).content
         with open(self._img_name, 'wb') as handler:
             handler.write(img_data)
+        with open("raw.puml", 'w') as handler:
+            handler.write(a)
 
 class AD_Model(Model):
 
@@ -112,20 +129,26 @@ class AD_Model(Model):
 
     get_sk = \
     """
-    {csw1} --> {csw2} ++ #cyan: Get Request
-    {sgn} o-> {csw2}:  Signal retrieved
-    return Get Response
+    {tab}{swc1} --> {swc2} ++ #cyan: Get Request
+    {tab}{sgn} o-> {swc2}:  Signal retrieved
+    {tab}return Get Response
     """
     set_sk = \
     """
-    {csw1} --> {csw1} ++ #gold: Set Request
-    {csw1} ->o {sgn} --: Set Signal
+    {tab}{swc1} --> {swc2} ++ #gold: Set Request
+    {tab}{swc2} ->o {sgn} --: Set Signal
+    """
+
+    routine_sk = \
+    """autonumber resume
+    {q} --> {swc}: Call the SWC routine
+    autonumber stop
     """
 
     open_task = \
         """
 autonumber {label}
-    [x-> q: {task} Start
+    [x-> {q}: {task} Start
 autonumber stop\n\n"""
     
 
@@ -199,15 +222,18 @@ autonumber stop\n\n"""
 
     def _get_puml_new_task(self, label: str, task: str, runner: str) -> str:
         return self._get_puml_deactivate_all() + \
-            self.open_task.format(label = label, task = task) + \
+            self.open_task.format(q= runner, label = label, task = task) + \
             self._get_puml_activation(runner)
             
     
-    def _get_puml_activation(self,item: str) -> str:
+    def _get_puml_activation(self,item: str, runner: str = None) -> str:
         item = self.__get_alias(item)
         self.__act_tabs += 1
         self.__act_items.insert(0,item)
-        res = "\t"*self.__act_tabs + self.act_sk.format(x= item)
+        res = ''
+        if runner:
+            res += "\t"*self.__act_tabs + self.routine_sk.format(q=runner, swc=item)
+        res += "\t"*self.__act_tabs + self.act_sk.format(x= item)
         return res
 
     def _get_puml_deactivation(self,item: str) -> str:
@@ -224,6 +250,7 @@ autonumber stop\n\n"""
     def _get_puml_deactivate_all(self) -> str:
         res = ""
         for item in self.__act_items:
+            item = self.__get_alias(item)
             res += "\t"*self.__act_tabs + self.deact_sk.format(x=item) + "\n"
             self.__act_tabs -= 1
 
@@ -231,66 +258,70 @@ autonumber stop\n\n"""
         self.__act_tabs = 0
         return res
     
-    def extract_core(self):
-        '''Loop on the steps to extract the main puml structure'''
+    def _get_puml_read_sgn(self, swc1: str, swc2: str, sgn: str) -> str:
+        swc1 = self.__get_alias(swc1)
+        swc2 = self.__get_alias(swc2)
+        sgn = self.__get_alias(sgn)
+        return self.get_sk.format(tab="\t"*(self.__act_tabs+1), swc1=swc1, swc2=swc2, sgn=sgn)
+    
+    def _get_puml_write_sgn(self, swc1: str, swc2: str, sgn: str) -> str:
+        swc1 = self.__get_alias(swc1)
+        swc2 = self.__get_alias(swc2)
+        sgn = self.__get_alias(sgn)
+        return self.set_sk.format(tab="\t"*(self.__act_tabs+1), swc1=swc1, swc2=swc2, sgn=sgn)
+        
+    def _get_core(self):
+        _core = []
+        runner = self.__get_alias(self._runners[0])
+        ssm_state = None
+        _th = TaskHandler()
+        _last_swc = None
+        _is_new_task = False
+        _is_new_swc = False
+        timer = None
 
-        core = []
-        queue_name = self.__get_alias(self._runners[0])
-        _last_task = {
-            'name': None,
-            'start': 0,
-            'run_i': 0,
-            'pos_i': 0,
-        }
-        _last_csw = None
 
-        for x in self._steps:          
-            kw = x.get('kw')
-            swc = x.get('swc')
-            sgn = x.get('sgn')
-            run = x.get('runner')
-            ssm = x.get('ssm')
-            cmd = x.get('cmd')
+        for x in self._steps:
+            match x['kw']:
+                case 'g1':
+                    ssm_state = x.get('ssm')
+                case 'w1':
+                    swc = x.get('swc')
+                    sgn = x.get('sgn')
+                    #Update task
+                    c_name, c_order = self._env.get_task(ssm_state, swc)
+                    #Check if the current task is a new one
+                    _is_new_task = c_name != _th.prev_task
+                    _is_new_swc = swc != _last_swc
 
-            #Update last task
-            if swc:
-                c_task_name, c_task_run_i = self._env.get_task('opm',swc)
-                if _last_task['name'] != c_task_name or _last_task['run_i'] >= c_task_run_i:
-                    _last_task['pos_i'] += 1
-                
-                a = self._env.get_task_scheduling(
-                    task_name=c_task_name,
-                    start_time=_last_task['start'],
-                    start_pos=_last_task['pos_i']
-                )
+                    if _is_new_task or _th.order > c_order:
+                        _th.update_cursor()
 
-                if _last_task['name'] != c_task_name:
-                    if not _last_task['name']:
-                        lbl = '"<b>[T01]"'
-                    else:
-                        lbl = "resume"
+                    _th.start, _th.cursor = \
+                        self._env.get_task_scheduling(c_name, _th.start, _th.cursor)
 
-                    if _last_csw:
-                        core.append(self._get_puml_deactivation(_last_csw))                
-                    core.append(self._get_puml_new_task(label=lbl,task=c_task_name, runner=queue_name))
+                    if _is_new_task:
+                        _th.update_task(c_name, c_order)
+                        timer = "resume" if timer else '"<b>[T0]"'
+                        _core.append(self._get_puml_deactivate_all())                
+                        _core.append(self._get_puml_new_task(timer,c_name,runner))
 
-                _last_task['name'] = c_task_name
-                _last_task['start'] = a[0]
-                _last_task['run_i'] = c_task_run_i
-                _last_task['pos_i'] = a[1]
+                    if _is_new_swc:
+                        if _last_swc:
+                            _core.append(self._get_puml_deactivation(_last_swc))
+                        _core.append(self._get_puml_activation(swc,runner))
+                        _last_swc = swc
 
-                #Check if the step opens an SWC operation
-                if kw == 'When':
-                    if _last_csw != swc:
-                        if _last_csw:
-                            core.append(self._get_puml_deactivation(_last_csw))
-                        core.append(self._get_puml_activation(swc))
-                
-                _last_csw = swc
+                    swc_sgn = self._env.get_swc_from_sgn(sgn)
+                    _core.append(self._get_puml_read_sgn(swc,swc_sgn,sgn))    
+                case 't1':
+                    sgn = x.get('sgn')
+                    swc_sgn = self._env.get_swc_from_sgn(sgn)
+                    _core.append(self._get_puml_write_sgn(_last_swc,swc_sgn,sgn))
 
-        core.append(self._get_puml_deactivate_all())
-        print("\n".join(core))
+        _core.append(self._get_puml_deactivate_all())
 
+        return "\n".join(_core)
 
     def _get_puml_header(self):
         return self.header
@@ -299,7 +330,7 @@ autonumber stop\n\n"""
         return ''
 
     def _get_puml_core(self):
-        return ''
+        return self._get_core()
 
 def get_existing_path(path: str) -> Path:
     p = Path(path)
@@ -312,23 +343,23 @@ def get_map(path: str) -> dict:
 
     #Compile rules
     for k, v in p['g2p'].items():
-        t_v = []
-        for rule in v:
-            t_v.append(re.compile(rule))
-        p['g2p'][k] = t_v
+        t_v = None
+        for lbl, rule in v.items():
+            t_v = re.compile(rule)
+            p['g2p'][k][lbl] = t_v
     
     return p
 
-def get_parsed_step(step: str, rules: List[re.Pattern]) -> dict:
+def get_parsed_step(step: str, rules: dict) -> dict:
     '''Get the standard dictionary representation from a step text'''
-    is_ok = False
-    for r in rules:
+    for k,r in rules.items():
         g = r.match(step)
         if g:
-            is_ok = True
             break
     assert g, "Wrong step text syntax:\n\t%s\n\tCorrect syntax rule:\n\t%s" % (step, rules)
-    return g.groupdict()
+    d = dict(g.groupdict())
+    d.update({'kw': k})
+    return d
 
 def get_collected_steps(scenario: dict, map: dict) -> List[dict]:
     last_keyword: str = None
@@ -338,7 +369,6 @@ def get_collected_steps(scenario: dict, map: dict) -> List[dict]:
         last_keyword =  last_keyword if step['keywordType'] == 'Conjunction' else \
             step['keyword'].replace(' ','')
         d = get_parsed_step(step['text'],map[last_keyword])
-        d.update({'kw':last_keyword})
         res.append(d)
 
     return res
@@ -358,8 +388,7 @@ def main():
     steps = get_collected_steps(gd['feature']['children'][0]['scenario'], map['g2p'])
 
     ad_model = AD_Model(elenv,steps,out_f)
-    #ad_model.export_puml()
-    ad_model.extract_core()
+    ad_model.export_puml()
 
 if __name__ == '__main__':
     main()

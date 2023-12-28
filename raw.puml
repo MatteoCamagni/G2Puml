@@ -1,0 +1,124 @@
+@startuml
+    !theme plain
+
+    header
+        
+    	|<b>Color| <#cyan> | <#gold> |
+    	|<b>Description| SWIFC Get | SWIFC Set |
+    
+    end header
+
+    legend top
+        
+    end legend
+
+    'Entities
+
+    box "Runners"
+    	queue "Scheduler Task Queue" as scheduler_task_queue
+
+    end box
+
+    box "Targets"
+    	participant "Temperature Measurement" as temperature_measurement
+	participant "Temperature Monitoring" as temperature_monitoring
+	participant "SSM Core" as ssm_core
+	participant "MCAL" as mcal
+	participant "Error Collector" as error_collector
+
+    end box
+
+    box "Resources"
+    	entity "RAW_ECU_TEMPERATURE" as raw_ecu_temperature
+	entity "ECU_TEMPERATURE" as ecu_temperature
+	entity "ERROR_TEMPERATURE" as error_temperature
+	entity "ACS" as acs
+
+    end box
+
+    'Sequence actions
+    == Start Time ==
+
+    
+
+autonumber "<b>[T0]"
+    [x-> scheduler_task_queue: Task_5 Start
+autonumber stop
+
+	activate scheduler_task_queue
+
+		autonumber resume
+    scheduler_task_queue --> temperature_measurement: Call the SWC routine
+    autonumber stop
+    		activate temperature_measurement
+
+
+    			temperature_measurement --> mcal ++ #cyan: Get Request
+    			raw_ecu_temperature o-> mcal:  Signal retrieved
+    			return Get Response
+    
+
+    			temperature_measurement --> temperature_measurement ++ #gold: Set Request
+    			temperature_measurement ->o ecu_temperature --: Set Signal
+    
+		deactivate temperature_measurement
+
+		autonumber resume
+    scheduler_task_queue --> temperature_monitoring: Call the SWC routine
+    autonumber stop
+    		activate temperature_monitoring
+
+
+    			temperature_monitoring --> temperature_measurement ++ #cyan: Get Request
+    			ecu_temperature o-> temperature_measurement:  Signal retrieved
+    			return Get Response
+    
+
+    			temperature_monitoring --> error_collector ++ #gold: Set Request
+    			error_collector ->o error_temperature --: Set Signal
+    
+
+    			temperature_monitoring --> mcal ++ #cyan: Get Request
+    			raw_ecu_temperature o-> mcal:  Signal retrieved
+    			return Get Response
+    
+
+    			temperature_monitoring --> error_collector ++ #gold: Set Request
+    			error_collector ->o error_temperature --: Set Signal
+    
+		deactivate temperature_monitoring
+
+	deactivate scheduler_task_queue
+
+
+
+autonumber resume
+    [x-> scheduler_task_queue: Task_1 Start
+autonumber stop
+
+	activate scheduler_task_queue
+
+
+		autonumber resume
+    scheduler_task_queue --> ssm_core: Call the SWC routine
+    autonumber stop
+    		activate ssm_core
+
+
+    			ssm_core --> error_collector ++ #cyan: Get Request
+    			error_temperature o-> error_collector:  Signal retrieved
+    			return Get Response
+    
+
+    			ssm_core --> ssm_core ++ #gold: Set Request
+    			ssm_core ->o acs --: Set Signal
+    
+		deactivate ssm_core
+
+	deactivate scheduler_task_queue
+
+
+
+    == End Time ==
+    @enduml
+    

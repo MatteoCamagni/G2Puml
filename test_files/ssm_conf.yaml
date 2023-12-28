@@ -1,4 +1,4 @@
-opm:
+OPERATION_MODE:
     Task_1:
         - SSM Core
     Task_2:
