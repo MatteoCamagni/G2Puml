@@ -1,12 +1,12 @@
 OPERATION_MODE:
     Task_1:
-        - SSM Core
+        SSM Core: NA
     Task_2:
-        - null
+        null
     Task_3:
-        - null
+        null
     Task_4:
-        - null
+        null
     Task_5:
-        - Temperature Measurement
-        - Temperature Monitoring
+        Temperature Measurement: NA
+        Temperature Monitoring: NA

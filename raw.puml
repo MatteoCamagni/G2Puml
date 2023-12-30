@@ -1,6 +1,8 @@
 @startuml
     !theme plain
 
+    title Temperature error evaluation
+
     header
         
     	|<b>Color| <#cyan> | <#gold> |
@@ -9,7 +11,9 @@
     end header
 
     legend top
-        
+        |<b>Time| <b>Start Time | <b>T1 | <b>T2 | <b>T3 | <b>T4 | <b>T5 | <b>T6 | <b>End Time |
+|<b>Value [&#181;s]| 2525 | 2525 | NA | NA | 2675 | 3000 | NA | 3025 |
+
     end legend
 
     'Entities
@@ -41,16 +45,19 @@
 
     
 
-autonumber "<b>[T0]"
-    [x-> scheduler_task_queue: Task_5 Start
-autonumber stop
-
-	activate scheduler_task_queue
-
-		autonumber resume
-    scheduler_task_queue --> temperature_measurement: Call the SWC routine
+    autonumber "<b>[T0]"
+    [x-> scheduler_task_queue: Start Task_5
     autonumber stop
-    		activate temperature_measurement
+
+    	activate scheduler_task_queue
+
+
+    	autonumber resume
+    	scheduler_task_queue-> temperature_measurement: Call Temperature Measurement routine
+    	autonumber stop
+
+    
+		activate temperature_measurement
 
 
     			temperature_measurement --> mcal ++ #cyan: Get Request
@@ -63,10 +70,13 @@ autonumber stop
     
 		deactivate temperature_measurement
 
-		autonumber resume
-    scheduler_task_queue --> temperature_monitoring: Call the SWC routine
-    autonumber stop
-    		activate temperature_monitoring
+
+    	autonumber resume
+    	scheduler_task_queue-> temperature_monitoring: Call Temperature Monitoring routine
+    	autonumber stop
+
+    
+		activate temperature_monitoring
 
 
     			temperature_monitoring --> temperature_measurement ++ #cyan: Get Request
@@ -88,35 +98,47 @@ autonumber stop
     
 		deactivate temperature_monitoring
 
-	deactivate scheduler_task_queue
 
 
-
-autonumber resume
-    [x-> scheduler_task_queue: Task_1 Start
-autonumber stop
-
-	activate scheduler_task_queue
-
-
-		autonumber resume
-    scheduler_task_queue --> ssm_core: Call the SWC routine
+    autonumber resume
+    [x-> scheduler_task_queue: End Task_5
     autonumber stop
-    		activate ssm_core
+
+    deactivate scheduler_task_queue
 
 
-    			ssm_core --> error_collector ++ #cyan: Get Request
-    			error_temperature o-> error_collector:  Signal retrieved
-    			return Get Response
+    autonumber resume
+    [x-> scheduler_task_queue: Start Task_1
+    autonumber stop
+
+    activate scheduler_task_queue
+
+
+    autonumber resume
+    scheduler_task_queue-> ssm_core: Call SSM Core routine
+    autonumber stop
+
+    
+	activate ssm_core
+
+
+    		ssm_core --> error_collector ++ #cyan: Get Request
+    		error_temperature o-> error_collector:  Signal retrieved
+    		return Get Response
     
 
-    			ssm_core --> ssm_core ++ #gold: Set Request
-    			ssm_core ->o acs --: Set Signal
+    		ssm_core --> ssm_core ++ #gold: Set Request
+    		ssm_core ->o acs --: Set Signal
     
-		deactivate ssm_core
+	deactivate ssm_core
 
-	deactivate scheduler_task_queue
 
+
+    autonumber resume
+    [x-> scheduler_task_queue: End Task_1
+    autonumber stop
+
+    deactivate scheduler_task_queue
 
 
     == End Time ==

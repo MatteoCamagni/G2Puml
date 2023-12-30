@@ -22,15 +22,19 @@ class TaskHandler():
     def update_cursor(self) -> None:
         self.cursor += 1
 
-    def update_task(self, new_tsk: str, new_order: int) -> None:
+    def update_task(self, new_tsk: str, new_order: int, new_start: int, new_cursor: str) -> None:
         self.prev_task = new_tsk
         self.order = new_order
+        self.start = new_start
+        self.cursor = new_cursor
 
 class Model():
 
     skeleton = \
     """@startuml
     !theme plain
+
+    title {title}
 
     header
         {header}
@@ -65,10 +69,12 @@ class Model():
 
     def __init__(self,
                  elenv: ElopConf,
+                 title: str,
                  steps: List[dict],
                  img_name: str,
                  ) -> None:
         self._env = elenv
+        self._title = title
         self._steps = steps
         self._runners = None
         self._targets = None
@@ -100,13 +106,15 @@ class Model():
         pass
 
     def _get_plant_uml(self) -> str:
+        core = self._get_puml_core()
         return self.skeleton.format(
+            title = self._title,
             header = self._get_puml_header(),
             legend = self._get_puml_legend(),
             runners = self._get_puml_runners(),
             targets = self._get_puml_targets(),
             resources = self._get_puml_resources(),
-            core = self._get_puml_core(),
+            core = core,
         )
     
     def export_puml(self) -> None:
@@ -140,16 +148,11 @@ class AD_Model(Model):
     """
 
     routine_sk = \
-    """autonumber resume
-    {q} --> {swc}: Call the SWC routine
-    autonumber stop
     """
-
-    open_task = \
-        """
-autonumber {label}
-    [x-> {q}: {task} Start
-autonumber stop\n\n"""
+    {tab}autonumber {timer}
+    {tab}{q}-> {tgt}: {tgt_desc}
+    {tab}autonumber stop\n
+    """
     
 
     act_sk = "activate {x}\n"
@@ -167,6 +170,7 @@ autonumber stop\n\n"""
         self.__set_core_attrs()
         self.__act_items = []
         self.__act_tabs = 0
+        self._puml_timers = {}
 
     def __get_alias(self, label: str):
         return label.lower().replace(' ','_')
@@ -219,27 +223,51 @@ autonumber stop\n\n"""
             res += self.entity_sk.format(sgn=v,n=self.__get_alias(v))
 
         return res
-
-    def _get_puml_new_task(self, label: str, task: str, runner: str) -> str:
-        return self._get_puml_deactivate_all() + \
-            self.open_task.format(q= runner, label = label, task = task) + \
-            self._get_puml_activation(runner)
-            
     
-    def _get_puml_activation(self,item: str, runner: str = None) -> str:
-        item = self.__get_alias(item)
-        self.__act_tabs += 1
-        self.__act_items.insert(0,item)
-        res = ''
-        if runner:
-            res += "\t"*self.__act_tabs + self.routine_sk.format(q=runner, swc=item)
-        res += "\t"*self.__act_tabs + self.act_sk.format(x= item)
-        return res
+    def _update_puml_timers(self, value, key: str= None):
+        key = key if key!=None else f"T{len(self._puml_timers)}"
+        self._puml_timers.update({key: value})
 
-    def _get_puml_deactivation(self,item: str) -> str:
+    def _get_puml_timer(self, runner: str, target: str, description: str, timer: str = "resume") -> str:
+        return self.routine_sk.format(
+            q = self.__get_alias(runner),
+            tab = "\t" * self.__act_tabs,
+            timer = timer,
+            tgt = self.__get_alias(target),
+            tgt_desc = description,
+        )
+
+    def _get_puml_new_task(self,task: str,  timer: str, runner: str) -> str:
+        res = self._get_puml_timer(
+            runner='[x', 
+            target=runner, 
+            description="Start "+task,
+            timer=timer)
+        res += self._get_puml_activation(item=runner, store=False)
+        return res
+    
+    def _get_puml_end_task(self,task: str,  runner: str) -> str:
+        res = self._get_puml_timer(
+            runner='[x', 
+            target=runner, 
+            description="End "+task,
+            timer="resume")
+        res += self._get_puml_deactivation(item=runner, remove=False) 
+        return res       
+    
+    def _get_puml_activation(self,item: str, store: bool = True) -> str:
+        item = self.__get_alias(item)
+        if store:
+            self.__act_items.insert(0,item)
+        self.__act_tabs += 1
+
+        return "\t"*self.__act_tabs + self.act_sk.format(x= item)
+
+    def _get_puml_deactivation(self,item: str, remove: bool = True) -> str:
         item = self.__get_alias(item)
         try:
-            self.__act_items.remove(item)
+            if remove:
+                self.__act_items.remove(item)
             res = "\t"*self.__act_tabs + self.deact_sk.format(x=item)
             self.__act_tabs -= 1
         except:
@@ -269,7 +297,7 @@ autonumber stop\n\n"""
         swc2 = self.__get_alias(swc2)
         sgn = self.__get_alias(sgn)
         return self.set_sk.format(tab="\t"*(self.__act_tabs+1), swc1=swc1, swc2=swc2, sgn=sgn)
-        
+
     def _get_core(self):
         _core = []
         runner = self.__get_alias(self._runners[0])
@@ -297,20 +325,46 @@ autonumber stop\n\n"""
                     if _is_new_task or _th.order > c_order:
                         _th.update_cursor()
 
-                    _th.start, _th.cursor = \
+                    new_start, new_cursor = \
                         self._env.get_task_scheduling(c_name, _th.start, _th.cursor)
 
                     if _is_new_task:
-                        _th.update_task(c_name, c_order)
+                        _last_swc = None
                         timer = "resume" if timer else '"<b>[T0]"'
-                        _core.append(self._get_puml_deactivate_all())                
-                        _core.append(self._get_puml_new_task(timer,c_name,runner))
+                        _core.append(self._get_puml_deactivate_all())
+                        if _th.prev_task != None:
+                            _core.append(self._get_puml_end_task(
+                                task=_th.prev_task,
+                                runner=runner,
+                            ))
+                            self._update_puml_timers(
+                                _th.start + self._env.get_task_defs(_th.prev_task)['max_d']
+                                )
+                        else:
+                            _start_time = new_start
+                            self._update_puml_timers(_start_time,"Start Time")
+                        
+
+                        self._update_puml_timers(new_start)
+
+                        _th.update_task(c_name, c_order, new_start, new_cursor)
+                        _core.append(self._get_puml_new_task(
+                            task=c_name,
+                            timer=timer,
+                            runner=runner,
+                        ))
 
                     if _is_new_swc:
                         if _last_swc:
                             _core.append(self._get_puml_deactivation(_last_swc))
-                        _core.append(self._get_puml_activation(swc,runner))
+                        _core.append(self._get_puml_timer(
+                            runner=runner,
+                            target=swc,
+                            description=f"Call {swc} routine",
+                        ))
+                        _core.append(self._get_puml_activation(item=swc))
                         _last_swc = swc
+                        self._update_puml_timers(self._env.ssm[ssm_state][_th.prev_task][swc])
 
                     swc_sgn = self._env.get_swc_from_sgn(sgn)
                     _core.append(self._get_puml_read_sgn(swc,swc_sgn,sgn))    
@@ -320,6 +374,13 @@ autonumber stop\n\n"""
                     _core.append(self._get_puml_write_sgn(_last_swc,swc_sgn,sgn))
 
         _core.append(self._get_puml_deactivate_all())
+        _core.append(self._get_puml_end_task(
+            task=c_name,
+            runner=runner,
+        ))
+        self._update_puml_timers(
+            value=_th.start + self._env.get_task_defs(_th.prev_task)['max_d'],
+            key="End Time")
 
         return "\n".join(_core)
 
@@ -327,7 +388,15 @@ autonumber stop\n\n"""
         return self.header
 
     def _get_puml_legend(self):
-        return ''
+               
+        row1 = "|<b>Time|"
+        row2 = "|<b>Value [&#181;s]|"
+        
+        for k,v in self._puml_timers.items():
+            row1 += f" <b>{k} |"
+            row2 += f" {v} |"
+
+        return row1+"\n"+row2+"\n"
 
     def _get_puml_core(self):
         return self._get_core()
@@ -387,7 +456,7 @@ def main():
                     )
     steps = get_collected_steps(gd['feature']['children'][0]['scenario'], map['g2p'])
 
-    ad_model = AD_Model(elenv,steps,out_f)
+    ad_model = AD_Model(elenv,out_f,steps,out_f)
     ad_model.export_puml()
 
 if __name__ == '__main__':
