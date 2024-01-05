@@ -1,5 +1,6 @@
 import csv
 import yaml
+from zlib import crc32
 from pathlib import Path
 from typing import List
 
@@ -22,6 +23,9 @@ class ElopConf():
         self.__icd: List[dict]  = self.__parse_icd(icd_parh)
         self.__sch: List[dict] = self.__parse_sch(sch_path)
         self.__ssm: dict = self.__parse_ssm(ssm_conf_path)
+        self.icd_crc: int = self.__get_crc32_from_file(icd_parh)
+        self.sch_crc: int = self.__get_crc32_from_file(sch_path)
+        self.ssm_crc: int = self.__get_crc32_from_file(ssm_conf_path)
 
     @property
     def icd(self):
@@ -34,6 +38,10 @@ class ElopConf():
     @property
     def ssm(self):
          return self.__ssm
+    
+    def __get_crc32_from_file(self, path: str) -> int:
+        with get_existing_path(path).open('rb') as f:
+            return crc32(f.read())
     
     def __parse_icd(self,path:str) -> List[dict]:
         with get_existing_path(path).open('r') as f:

@@ -1,3 +1,7 @@
+labels:
+  run_lbl: "Scheduler"
+  tgt_lbl: "Software Components"
+  rsc_lbl: "Software Signals"
 g2p:
   Given:
     g1: 'the (?P<runner>.*) during the SSM\.(?P<ssm>\w+) state'

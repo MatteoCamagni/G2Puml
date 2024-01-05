@@ -3,6 +3,7 @@ import re
 import yaml
 import plantuml
 import requests
+from zlib import crc32
 from typing import List
 from pathlib import Path
 from gherkin.parser import Parser
@@ -46,15 +47,15 @@ class Model():
 
     'Entities
 
-    box "Runners"
+    box "{Runners}"
     {runners}
     end box
 
-    box "Targets"
+    box "{Targets}"
     {targets}
     end box
 
-    box "Resources"
+    box "{Resources}"
     {resources}
     end box
 
@@ -64,6 +65,11 @@ class Model():
     {core}
 
     == End Time ==
+
+    footer
+        {footer}
+    end footer
+
     @enduml
     """
 
@@ -72,6 +78,9 @@ class Model():
                  title: str,
                  steps: List[dict],
                  img_name: str,
+                 run_lbl: str,
+                 tgt_lbl: str,
+                 rsc_lbl: str,
                  ) -> None:
         self._env = elenv
         self._title = title
@@ -79,6 +88,9 @@ class Model():
         self._runners = None
         self._targets = None
         self._resources = None
+        self._runners_lbl = run_lbl
+        self._targets_lbl = tgt_lbl
+        self._resources_lbl = rsc_lbl
         self._img_name = img_name.lower().replace(' ','_') + '.png'
 
     @abstractmethod
@@ -98,6 +110,10 @@ class Model():
         pass
 
     @abstractmethod
+    def _get_puml_footer(self):
+        pass
+
+    @abstractmethod
     def _get_puml_legend(self):
         pass
 
@@ -108,6 +124,9 @@ class Model():
     def _get_plant_uml(self) -> str:
         core = self._get_puml_core()
         return self.skeleton.format(
+            Runners = self._runners_lbl,
+            Targets = self._targets_lbl,
+            Resources = self._resources_lbl,
             title = self._title,
             header = self._get_puml_header(),
             legend = self._get_puml_legend(),
@@ -115,6 +134,7 @@ class Model():
             targets = self._get_puml_targets(),
             resources = self._get_puml_resources(),
             core = core,
+            footer =self._get_puml_footer(),
         )
     
     def export_puml(self) -> None:
@@ -131,20 +151,20 @@ class AD_Model(Model):
 
     header = \
     """
-    \t|<b>Color| <#cyan> | <#gold> |
-    \t|<b>Description| SWIFC Get | SWIFC Set |
+    \t|<b>Element| <#0033ff> | <#ffcc66> | <b>ND |
+    \t|<b>Description| SWIFC Get | SWIFC Set | Not defined in this context |
     """
 
     get_sk = \
     """
-    {tab}{swc1} --> {swc2} ++ #cyan: Get Request
-    {tab}{sgn} o-> {swc2}:  Signal retrieved
-    {tab}return Get Response
+    {tab}{swc1} --> {swc2} ++ #0033ff: &#160;Get Request
+    {tab}{sgn} o-> {swc2}:  &#160;Signal retrieved
+    {tab}return &#160;Get Response
     """
     set_sk = \
     """
-    {tab}{swc1} --> {swc2} ++ #gold: Set Request
-    {tab}{swc2} ->o {sgn} --: Set Signal
+    {tab}{swc1} --> {swc2} ++ #ffcc66: &#160;Set Request
+    {tab}{swc2} ->o {sgn} --: &#160;Set Signal
     """
 
     routine_sk = \
@@ -158,9 +178,11 @@ class AD_Model(Model):
     act_sk = "activate {x}\n"
     deact_sk = "deactivate {x}\n"
 
-    queue_sk = '\tqueue "{runner}" as {n}\n'
+    queue_sk = '\tqueue "{runner}{details}" as {n}\n'
     participant_sk = '\tparticipant "{swc}" as {n}\n'
     entity_sk = '\tentity "{sgn}" as {n}\n'
+
+    footer_sk = 'Steps ver.: {steps}, ICD ver.: {icd}, Scheduler Confi ver.: {sch}, SSM Model ver.: {ssm}'
 
     def __init__(self,
                  *args,
@@ -176,7 +198,7 @@ class AD_Model(Model):
         return label.lower().replace(' ','_')
 
     def __set_core_attrs(self):
-        self._runners = []
+        self._runners = None
         self._targets = {'active':[],'passive':[]}
         self._resources = []
 
@@ -184,8 +206,11 @@ class AD_Model(Model):
             runx = x.get('runner')
 
             if runx:
-                if runx not in self._runners:
-                    self._runners.append(runx)
+                details = ''
+                if x['kw'] == 'g1':
+                    details += " (<i>%s</i>)" % x.get('ssm').replace('_',' ')
+                if not self._runners:
+                    self._runners = (runx, details)
 
             swc = x.get('swc')
             if swc:
@@ -203,11 +228,8 @@ class AD_Model(Model):
                     self._targets['passive'].append(swc)
 
     def _get_puml_runners(self) -> str:
-        res = ''
-        for v in self._runners:
-            res += self.queue_sk.format(runner=v,n=self.__get_alias(v))
-
-        return res
+        r, d = self._runners
+        return self.queue_sk.format(runner=r,details=d,n=self.__get_alias(r))
 
     def _get_puml_targets(self):
         res = ''
@@ -387,6 +409,14 @@ class AD_Model(Model):
     def _get_puml_header(self):
         return self.header
 
+    def _get_puml_footer(self):
+        return self.footer_sk.format(
+            steps=crc32(str(self._steps).encode()),
+            icd = self._env.icd_crc,
+            sch = self._env.sch_crc,
+            ssm = self._env.ssm_crc,
+            )
+    
     def _get_puml_legend(self):
                
         row1 = "|<b>Time|"
@@ -454,9 +484,9 @@ def main():
                      sch_path='C:/Users/CMM2OFO/Documents/Repos/G2Puml/Strategy2.yaml',
                      ssm_conf_path=root / "test_files" / 'ssm_conf.yaml',
                     )
-    steps = get_collected_steps(gd['feature']['children'][0]['scenario'], map['g2p'])
 
-    ad_model = AD_Model(elenv,out_f,steps,out_f)
+    steps = get_collected_steps(gd['feature']['children'][0]['scenario'], map['g2p'])
+    ad_model = AD_Model(elenv,out_f,steps,out_f,**map['labels'])
     ad_model.export_puml()
 
 if __name__ == '__main__':
