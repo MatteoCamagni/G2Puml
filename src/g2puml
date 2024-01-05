@@ -1,17 +1,26 @@
 #Imports
 import re
+import sys
 import yaml
 import plantuml
 import requests
+import argparse
 from zlib import crc32
 from typing import List
 from pathlib import Path
 from gherkin.parser import Parser
 from elop_tools import ElopConf
 from abc import abstractmethod
+from colorama import just_fix_windows_console
 
+#Fix the ANSI color terminal in Windows
+just_fix_windows_console()
 
 RENDER_URL = 'http://www.plantuml.com/plantuml/img/'
+
+class CLR:
+    green = "\033[92m "
+    close = "\033[00m "
 
 class TaskHandler():
     def __init__(self):
@@ -78,10 +87,12 @@ class Model():
                  title: str,
                  steps: List[dict],
                  img_name: str,
+                 out_dir: Path,
                  run_lbl: str,
                  tgt_lbl: str,
                  rsc_lbl: str,
                  ) -> None:
+        self._out_dir = out_dir
         self._env = elenv
         self._title = title
         self._steps = steps
@@ -91,7 +102,7 @@ class Model():
         self._runners_lbl = run_lbl
         self._targets_lbl = tgt_lbl
         self._resources_lbl = rsc_lbl
-        self._img_name = img_name.lower().replace(' ','_') + '.png'
+        self._img_name: Path = self._out_dir / (img_name.lower().replace(' ','_') + '.png')
 
     @abstractmethod
     def _get_puml_runners(self):
@@ -142,9 +153,10 @@ class Model():
         a = self._get_plant_uml()
         img_url = puml.get_url(a)
         img_data = requests.get(img_url).content
-        with open(self._img_name, 'wb') as handler:
+        with self._img_name.open('wb') as handler:
             handler.write(img_data)
-        with open("raw.puml", 'w') as handler:
+            print('%sExported sequence diagram%s: %s' % (CLR.green, CLR.close, self._img_name))
+        with self._img_name.open('w') as handler:
             handler.write(a)
 
 class AD_Model(Model):
@@ -208,7 +220,7 @@ class AD_Model(Model):
             if runx:
                 details = ''
                 if x['kw'] == 'g1':
-                    details += " (<i>%s</i>)" % x.get('ssm').replace('_',' ')
+                    details += " (<i>%s.%s</i>)" % (x.get('state'),x.get('substate'))
                 if not self._runners:
                     self._runners = (runx, details)
 
@@ -334,12 +346,13 @@ class AD_Model(Model):
         for x in self._steps:
             match x['kw']:
                 case 'g1':
-                    ssm_state = x.get('ssm')
+                    ssm_state = x.get('state')
+                    ssm_substate = x.get('substate')
                 case 'w1':
                     swc = x.get('swc')
                     sgn = x.get('sgn')
                     #Update task
-                    c_name, c_order = self._env.get_task(ssm_state, swc)
+                    c_name, c_order = self._env.get_task(ssm_state,ssm_substate, swc)
                     #Check if the current task is a new one
                     _is_new_task = c_name != _th.prev_task
                     _is_new_swc = swc != _last_swc
@@ -386,7 +399,7 @@ class AD_Model(Model):
                         ))
                         _core.append(self._get_puml_activation(item=swc))
                         _last_swc = swc
-                        self._update_puml_timers(self._env.ssm[ssm_state][_th.prev_task][swc])
+                        self._update_puml_timers(self._env.ssm[ssm_state][ssm_substate][_th.prev_task][swc])
 
                     swc_sgn = self._env.get_swc_from_sgn(sgn)
                     _core.append(self._get_puml_read_sgn(swc,swc_sgn,sgn))    
@@ -433,12 +446,42 @@ class AD_Model(Model):
 
 def get_existing_path(path: str) -> Path:
     p = Path(path)
+    sys.tracebacklimit=0
     assert p.exists(), 'Error: %s does not exists!' % path
+    sys.tracebacklimit=10
     return p
 
-def get_map(path: str) -> dict:
-    p = get_existing_path(path)
-    p = yaml.safe_load(p.open('r'))
+def get_existing_dir(path: str) -> Path:
+    p = Path(path)
+    sys.tracebacklimit=0
+    assert p.is_dir(), 'Error: %s is not a folder!' % path
+    sys.tracebacklimit=10
+    return p
+
+def get_args() -> argparse.Namespace:
+    '''Parse the argument from command line'''
+    parser = argparse.ArgumentParser(
+        prog = __name__,
+        description = __doc__,
+    )
+    parser.add_argument('--map', type=get_existing_path, required=True, 
+                        help="Parsing map for the feature file")
+    parser.add_argument('--src', type=get_existing_path, required=True,  
+                        help="Feature file used as source")
+    parser.add_argument('--icd', type=get_existing_path, required=True,  
+                        help="Interface control document")
+    parser.add_argument('--sccd', type=get_existing_path, required=True,  
+                        help="Scheduler configuration control document")
+    parser.add_argument('--ssmc', type=get_existing_path, required=True, 
+                        help="SSM configuration")
+    parser.add_argument('--outdir', type=get_existing_dir, required=True, 
+                        help="Output directory")
+    
+    return parser.parse_args()
+
+def get_map(path: Path) -> dict:
+    with path.open('r') as f:
+        p = yaml.safe_load(f)
 
     #Compile rules
     for k, v in p['g2p'].items():
@@ -473,21 +516,30 @@ def get_collected_steps(scenario: dict, map: dict) -> List[dict]:
     return res
 
 def main():
-    root = Path(__file__).parents[1] 
+    parsed_input = get_args()
 
-    gd = Parser().parse("C:/Users/CMM2OFO/Documents/Repos/G2Puml/test_files/demo.feature")
-    map = get_map('C:/Users/CMM2OFO/Documents/Repos/G2Puml/src/maps/ad_data_flow.yaml')
+    gd = Parser().parse(str(parsed_input.src))
+    map = get_map(parsed_input.map)
 
     out_f = gd['feature']['children'][0]['scenario']['name']
 
-    elenv = ElopConf(icd_parh=root / "test_files" / 'icd.csv',
-                     sch_path='C:/Users/CMM2OFO/Documents/Repos/G2Puml/Strategy2.yaml',
-                     ssm_conf_path=root / "test_files" / 'ssm_conf.yaml',
+    elenv = ElopConf(icd_path=str(parsed_input.icd),
+                     sch_path=str(parsed_input.sccd),
+                     ssm_conf_path=str(parsed_input.ssmc),
                     )
-
+    
     steps = get_collected_steps(gd['feature']['children'][0]['scenario'], map['g2p'])
-    ad_model = AD_Model(elenv,out_f,steps,out_f,**map['labels'])
+    ad_model = AD_Model(
+        elenv=elenv,
+        title=out_f,
+        steps=steps,
+        img_name=out_f,
+        out_dir=parsed_input.outdir,
+        **map['labels'],
+        )
+
     ad_model.export_puml()
 
 if __name__ == '__main__':
+    sys.argv = "python --map C:/Users/CMM2OFO/Documents/Repos/G2Puml/src/maps/ad_data_flow.yaml --src C:/Users/CMM2OFO/Documents/Repos/G2Puml/test_files/demo.feature --icd C:/Users/CMM2OFO/Downloads/exportx.csv --sccd C:/Users/CMM2OFO/Documents/Repos/G2Puml/Strategy2.yaml --ssmc C:/Users/CMM2OFO/Documents/Repos/G2Puml/test_files/ssm_conf.yaml --outdir C:/Users/CMM2OFO/Documents/".split()
     main()

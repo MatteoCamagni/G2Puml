@@ -1,12 +1,13 @@
-OPERATION_MODE:
-    Task_1:
-        SSM Core: ND
-    Task_2:
-        null
-    Task_3:
-        null
-    Task_4:
-        null
-    Task_5:
-        Temperature Measurement: ND
-        Temperature Monitoring: ND
+OPM:
+    DEFAULT:
+        Task_1:
+            SSM Core: ND
+        Task_2:
+            null
+        Task_3:
+            null
+        Task_4:
+            null
+        Task_5:
+            Temperature Measurement: ND
+            Temperature Monitoring: ND

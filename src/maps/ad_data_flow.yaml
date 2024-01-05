@@ -4,7 +4,7 @@ labels:
   rsc_lbl: "Software Signals"
 g2p:
   Given:
-    g1: 'the (?P<runner>.*) during the SSM\.(?P<ssm>\w+) state'
+    g1: 'the (?P<runner>.*) during the SSM\.(?P<state>\w+)\.(?P<substate>\w+)\sstate'
   When:
     w1: 'the (?P<swc>.*) reads the (?P<sgn>\w+) signal'
   Then:

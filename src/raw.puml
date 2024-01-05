@@ -1,0 +1,151 @@
+@startuml
+    !theme plain
+
+    title Temperature error evaluation from ECU temperature signal
+
+    header
+        
+    	|<b>Element| <#0033ff> | <#ffcc66> | <b>ND |
+    	|<b>Description| SWIFC Get | SWIFC Set | Not defined in this context |
+    
+    end header
+
+    legend top
+        |<b>Time| <b>Start Time | <b>T1 | <b>T2 | <b>T3 | <b>T4 | <b>T5 | <b>T6 | <b>End Time |
+|<b>Value [&#181;s]| 2525 | 2525 | ND | ND | 2675 | 3000 | ND | 3025 |
+
+    end legend
+
+    'Entities
+
+    box "Scheduler"
+    	queue "Scheduler Task Configuration (<i>OPERATION MODE</i>)" as scheduler_task_configuration
+
+    end box
+
+    box "Software Components"
+    	participant "Temperature Measurement" as temperature_measurement
+	participant "Temperature Monitoring" as temperature_monitoring
+	participant "SSM Core" as ssm_core
+	participant "MCAL" as mcal
+	participant "Error Collector" as error_collector
+
+    end box
+
+    box "Software Signals"
+    	entity "RAW_ECU_TEMPERATURE" as raw_ecu_temperature
+	entity "ECU_TEMPERATURE" as ecu_temperature
+	entity "ERROR_TEMPERATURE" as error_temperature
+	entity "ACS" as acs
+
+    end box
+
+    'Sequence actions
+    == Start Time ==
+
+    
+
+    autonumber "<b>[T0]"
+    [x-> scheduler_task_configuration: Start Task_5
+    autonumber stop
+
+    	activate scheduler_task_configuration
+
+
+    	autonumber resume
+    	scheduler_task_configuration-> temperature_measurement: Call Temperature Measurement routine
+    	autonumber stop
+
+    
+		activate temperature_measurement
+
+
+    			temperature_measurement --> mcal ++ #0033ff: &#160;Get Request
+    			raw_ecu_temperature o-> mcal:  &#160;Signal retrieved
+    			return &#160;Get Response
+    
+
+    			temperature_measurement --> temperature_measurement ++ #ffcc66: &#160;Set Request
+    			temperature_measurement ->o ecu_temperature --: &#160;Set Signal
+    
+		deactivate temperature_measurement
+
+
+    	autonumber resume
+    	scheduler_task_configuration-> temperature_monitoring: Call Temperature Monitoring routine
+    	autonumber stop
+
+    
+		activate temperature_monitoring
+
+
+    			temperature_monitoring --> temperature_measurement ++ #0033ff: &#160;Get Request
+    			ecu_temperature o-> temperature_measurement:  &#160;Signal retrieved
+    			return &#160;Get Response
+    
+
+    			temperature_monitoring --> error_collector ++ #ffcc66: &#160;Set Request
+    			error_collector ->o error_temperature --: &#160;Set Signal
+    
+
+    			temperature_monitoring --> mcal ++ #0033ff: &#160;Get Request
+    			raw_ecu_temperature o-> mcal:  &#160;Signal retrieved
+    			return &#160;Get Response
+    
+
+    			temperature_monitoring --> error_collector ++ #ffcc66: &#160;Set Request
+    			error_collector ->o error_temperature --: &#160;Set Signal
+    
+		deactivate temperature_monitoring
+
+
+
+    autonumber resume
+    [x-> scheduler_task_configuration: End Task_5
+    autonumber stop
+
+    deactivate scheduler_task_configuration
+
+
+    autonumber resume
+    [x-> scheduler_task_configuration: Start Task_1
+    autonumber stop
+
+    activate scheduler_task_configuration
+
+
+    autonumber resume
+    scheduler_task_configuration-> ssm_core: Call SSM Core routine
+    autonumber stop
+
+    
+	activate ssm_core
+
+
+    		ssm_core --> error_collector ++ #0033ff: &#160;Get Request
+    		error_temperature o-> error_collector:  &#160;Signal retrieved
+    		return &#160;Get Response
+    
+
+    		ssm_core --> ssm_core ++ #ffcc66: &#160;Set Request
+    		ssm_core ->o acs --: &#160;Set Signal
+    
+	deactivate ssm_core
+
+
+
+    autonumber resume
+    [x-> scheduler_task_configuration: End Task_1
+    autonumber stop
+
+    deactivate scheduler_task_configuration
+
+
+    == End Time ==
+
+    footer
+        Steps ver.: 1934200640, ICD ver.: 4008868112, Scheduler Confi ver.: 643861160, SSM Model ver.: 2947069357
+    end footer
+
+    @enduml
+    
