@@ -55,7 +55,7 @@ class ElopConf():
                 head.update({h:i})
                 i += 1
             i = r.index(['METADATA'])
-        return (head, r[0:i-2])
+        return (head, r[0:i-1])
     
     def __parse_sch(self,path:str) -> dict:
         with get_existing_path(path).open('r') as f:
@@ -94,7 +94,7 @@ class ElopConf():
             if x[sgn_i] == sgn:
                 res = icd_swc_rgx.match(x[swc_i])
                 if res:
-                    return str(res.group(0))
+                    return str(res.groups()[0])
                 raise Exception('The signal %s does not have a related SWC in ICD (%s)' % (sgn,self.__icd_path))
         raise Exception('The signal %s is not defined in ICD (%s)' % (sgn,self.__icd_path))
     

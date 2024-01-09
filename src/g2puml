@@ -8,6 +8,7 @@ import argparse
 from zlib import crc32
 from typing import List
 from pathlib import Path
+from copy import deepcopy
 from gherkin.parser import Parser
 from elop_tools import ElopConf
 from abc import abstractmethod
@@ -17,6 +18,20 @@ from colorama import just_fix_windows_console
 just_fix_windows_console()
 
 RENDER_URL = 'http://www.plantuml.com/plantuml/img/'
+replace_rex = re.compile(r'\<(\w+)\>')
+
+def get_block_text_util(text: str, max_words: int, max_chars_row: int) -> str:
+    res = ''
+    i_w = 1
+    i_c = 0
+    for x in text.split():
+        i_c += len(x)
+        if i_w%max_words == 0 or i_c>max_chars_row:
+            res += '\\n'
+            i_c = 0
+        res += f" {x}"
+        i_w += 1
+    return res
 
 class CLR:
     green = "\033[92m "
@@ -69,6 +84,9 @@ class Model():
     end box
 
     'Sequence actions
+
+    {setup}
+
     == Start Time ==
 
     {core}
@@ -102,7 +120,7 @@ class Model():
         self._runners_lbl = run_lbl
         self._targets_lbl = tgt_lbl
         self._resources_lbl = rsc_lbl
-        self._img_name: Path = self._out_dir / (img_name.lower().replace(' ','_') + '.png')
+        self._img_name: Path = self._out_dir / re.sub(r'[^\w]','_',img_name.lower())
 
     @abstractmethod
     def _get_puml_runners(self):
@@ -133,7 +151,7 @@ class Model():
         pass
 
     def _get_plant_uml(self) -> str:
-        core = self._get_puml_core()
+        core_dict = self._get_puml_core()
         return self.skeleton.format(
             Runners = self._runners_lbl,
             Targets = self._targets_lbl,
@@ -144,7 +162,8 @@ class Model():
             runners = self._get_puml_runners(),
             targets = self._get_puml_targets(),
             resources = self._get_puml_resources(),
-            core = core,
+            setup = core_dict['setup'],
+            core = core_dict['core'],
             footer =self._get_puml_footer(),
         )
     
@@ -153,18 +172,18 @@ class Model():
         a = self._get_plant_uml()
         img_url = puml.get_url(a)
         img_data = requests.get(img_url).content
-        with self._img_name.open('wb') as handler:
+        with self._img_name.with_suffix(".png").open('wb') as handler:
             handler.write(img_data)
-            print('%sExported sequence diagram%s: %s' % (CLR.green, CLR.close, self._img_name))
-        with self._img_name.open('w') as handler:
+            print('%sExported sequence diagram%s: %s' % (CLR.green, CLR.close, self._img_name.with_suffix(".png")))
+        with self._img_name.with_suffix(".puml").open('w') as handler:
             handler.write(a)
 
 class AD_Model(Model):
 
     header = \
     """
-    \t|<b>Element| <#0033ff> | <#ffcc66> | <b>ND |
-    \t|<b>Description| SWIFC Get | SWIFC Set | Not defined in this context |
+    \t|<b>Element| <#0033ff> | <#ff0000> | <#D3D3D3> | <#ffefcd> | <b>ND |
+    \t|<b>Description| SWIFC Get | SWIFC Set | Data Value | Additional Infos | Not defined in this context |
     """
 
     get_sk = \
@@ -175,8 +194,23 @@ class AD_Model(Model):
     """
     set_sk = \
     """
-    {tab}{swc1} --> {swc2} ++ #ffcc66: &#160;Set Request
+    {tab}{swc1} --> {swc2} ++ #ff0000: &#160;Set Request
     {tab}{swc2} ->o {sgn} --: &#160;Set Signal
+    """
+
+    sgn_val_sk = \
+    """
+    {tab}hnote over {sgn} #D3D3D3: {value}
+    """
+
+    sgn_brief_sk = \
+    """
+    {tab}rnote over of {sgn} #D3D3D3: {brief}
+    """
+
+    comment_sk = \
+    """
+    {tab}note across #ffefcd: {comment}
     """
 
     routine_sk = \
@@ -190,9 +224,9 @@ class AD_Model(Model):
     act_sk = "activate {x}\n"
     deact_sk = "deactivate {x}\n"
 
-    queue_sk = '\tqueue "{runner}{details}" as {n}\n'
-    participant_sk = '\tparticipant "{swc}" as {n}\n'
-    entity_sk = '\tentity "{sgn}" as {n}\n'
+    queue_sk = '{tab}queue "{runner}{details}" as {n}\n'
+    participant_sk = '{tab}participant "{swc}" as {n}\n'
+    entity_sk = '{tab}entity "{sgn}" as {n}\n'
 
     footer_sk = 'Steps ver.: {steps}, ICD ver.: {icd}, Scheduler Confi ver.: {sch}, SSM Model ver.: {ssm}'
 
@@ -241,20 +275,20 @@ class AD_Model(Model):
 
     def _get_puml_runners(self) -> str:
         r, d = self._runners
-        return self.queue_sk.format(runner=r,details=d,n=self.__get_alias(r))
+        return self.queue_sk.format(tab=self.__act_tabs*'\t',runner=r,details=d,n=self.__get_alias(r))
 
     def _get_puml_targets(self):
         res = ''
         for t in self._targets.values():
             for v in t:
-                res += self.participant_sk.format(swc=v,n=self.__get_alias(v))
+                res += self.participant_sk.format(tab=self.__act_tabs*'\t',swc=v,n=self.__get_alias(v))
 
         return res
 
     def _get_puml_resources(self):
         res = ''
         for v in self._resources:
-            res += self.entity_sk.format(sgn=v,n=self.__get_alias(v))
+            res += self.entity_sk.format(tab=self.__act_tabs*'\t',sgn=v,n=self.__get_alias(v))
 
         return res
     
@@ -332,8 +366,8 @@ class AD_Model(Model):
         sgn = self.__get_alias(sgn)
         return self.set_sk.format(tab="\t"*(self.__act_tabs+1), swc1=swc1, swc2=swc2, sgn=sgn)
 
-    def _get_core(self):
-        _core = []
+    def _get_core(self) -> dict:
+        res = {'setup': [],'core':[]}
         runner = self.__get_alias(self._runners[0])
         ssm_state = None
         _th = TaskHandler()
@@ -348,6 +382,26 @@ class AD_Model(Model):
                 case 'g1':
                     ssm_state = x.get('state')
                     ssm_substate = x.get('substate')
+                    res['setup'].append(self.sgn_val_sk.format(
+                        tab=self.__act_tabs*'\t',
+                        sgn=self.__get_alias('ACS.STATE'),
+                        value=f"SSM.{ssm_state}.{ssm_substate}"
+                        )
+                    )
+                case 'g2':
+                    res['setup'].append(self.sgn_val_sk.format(
+                        tab=self.__act_tabs*'\t',
+                        sgn=self.__get_alias(x.get('sgn')),
+                        value=x.get('value')
+                        )
+                    )
+                    if x.get('comment'):
+                        res['setup'].append(self.sgn_brief_sk.format(
+                            tab=self.__act_tabs*'\t',
+                            sgn=self.__get_alias(x.get('sgn')),
+                            brief=get_block_text_util(x.get('comment'),5,12)
+                            )
+                        )                        
                 case 'w1':
                     swc = x.get('swc')
                     sgn = x.get('sgn')
@@ -366,9 +420,9 @@ class AD_Model(Model):
                     if _is_new_task:
                         _last_swc = None
                         timer = "resume" if timer else '"<b>[T0]"'
-                        _core.append(self._get_puml_deactivate_all())
+                        res['core'].append(self._get_puml_deactivate_all())
                         if _th.prev_task != None:
-                            _core.append(self._get_puml_end_task(
+                            res['core'].append(self._get_puml_end_task(
                                 task=_th.prev_task,
                                 runner=runner,
                             ))
@@ -383,7 +437,7 @@ class AD_Model(Model):
                         self._update_puml_timers(new_start)
 
                         _th.update_task(c_name, c_order, new_start, new_cursor)
-                        _core.append(self._get_puml_new_task(
+                        res['core'].append(self._get_puml_new_task(
                             task=c_name,
                             timer=timer,
                             runner=runner,
@@ -391,25 +445,42 @@ class AD_Model(Model):
 
                     if _is_new_swc:
                         if _last_swc:
-                            _core.append(self._get_puml_deactivation(_last_swc))
-                        _core.append(self._get_puml_timer(
+                            res['core'].append(self._get_puml_deactivation(_last_swc))
+                        res['core'].append(self._get_puml_timer(
                             runner=runner,
                             target=swc,
                             description=f"Call {swc} routine",
                         ))
-                        _core.append(self._get_puml_activation(item=swc))
+                        res['core'].append(self._get_puml_activation(item=swc))
                         _last_swc = swc
                         self._update_puml_timers(self._env.ssm[ssm_state][ssm_substate][_th.prev_task][swc])
 
                     swc_sgn = self._env.get_swc_from_sgn(sgn)
-                    _core.append(self._get_puml_read_sgn(swc,swc_sgn,sgn))    
+                    res['core'].append(self._get_puml_read_sgn(swc,swc_sgn,sgn))    
                 case 't1':
                     sgn = x.get('sgn')
                     swc_sgn = self._env.get_swc_from_sgn(sgn)
-                    _core.append(self._get_puml_write_sgn(_last_swc,swc_sgn,sgn))
+                    res['core'].append(self._get_puml_write_sgn(_last_swc,swc_sgn,sgn))
+                case 't2':
+                    sgn = x.get('sgn')
+                    swc_sgn = self._env.get_swc_from_sgn(sgn)
+                    res['core'].append(self._get_puml_write_sgn(_last_swc,swc_sgn,sgn))
+                    res['core'].append(self.sgn_val_sk.format(
+                        tab=self.__act_tabs*'\t',
+                        sgn=self.__get_alias(sgn),
+                        value=x.get('value')
+                        )
+                    )
 
-        _core.append(self._get_puml_deactivate_all())
-        _core.append(self._get_puml_end_task(
+            #Add comment if defined
+            if x.get('docString'):
+                res['core'].append(self.comment_sk.format(
+                    tab='\t'*self.__act_tabs,
+                    comment=x['docString']['content'],
+                    ))
+
+        res['core'].append(self._get_puml_deactivate_all())
+        res['core'].append(self._get_puml_end_task(
             task=c_name,
             runner=runner,
         ))
@@ -417,7 +488,7 @@ class AD_Model(Model):
             value=_th.start + self._env.get_task_defs(_th.prev_task)['max_d'],
             key="End Time")
 
-        return "\n".join(_core)
+        return res
 
     def _get_puml_header(self):
         return self.header
@@ -441,8 +512,11 @@ class AD_Model(Model):
 
         return row1+"\n"+row2+"\n"
 
-    def _get_puml_core(self):
-        return self._get_core()
+    def _get_puml_core(self) -> dict:
+        d = {}
+        for k,v in self._get_core().items():
+            d.update({k:'\n'.join(v)})
+        return d
 
 def get_existing_path(path: str) -> Path:
     p = Path(path)
@@ -498,7 +572,7 @@ def get_parsed_step(step: str, rules: dict) -> dict:
         g = r.match(step)
         if g:
             break
-    assert g, "Wrong step text syntax:\n\t%s\n\tCorrect syntax rule:\n\t%s" % (step, rules)
+    assert g, "Wrong step text syntax:\n\t%s" % step
     d = dict(g.groupdict())
     d.update({'kw': k})
     return d
@@ -511,34 +585,64 @@ def get_collected_steps(scenario: dict, map: dict) -> List[dict]:
         last_keyword =  last_keyword if step['keywordType'] == 'Conjunction' else \
             step['keyword'].replace(' ','')
         d = get_parsed_step(step['text'],map[last_keyword])
+        d.update({'docString':step.get('docString')})
         res.append(d)
 
+    return res
+
+def get_scenario_list(scenario:dict) -> list:
+    res = []
+    if scenario['keyword']=='Scenario Outline':
+        #Extract keys
+        table=scenario['examples'][0]
+        header_keys=[x['value'] for x in table['tableHeader']['cells']]
+        #Loop on rows
+        for row in table['tableBody']:
+            row = row['cells']
+            temp_scenario = deepcopy(scenario)
+            del temp_scenario['examples']
+            #Replace steps definitions
+            for step in temp_scenario['steps']:
+                t = step['text']
+                for token in replace_rex.findall(t):
+                    step['text'] = t.replace(f'<{token}>',row[header_keys.index(token)]['value'])
+            res.append(deepcopy(temp_scenario))
+    else:
+        res = [scenario]
     return res
 
 def main():
     parsed_input = get_args()
 
     gd = Parser().parse(str(parsed_input.src))
+
     map = get_map(parsed_input.map)
 
-    out_f = gd['feature']['children'][0]['scenario']['name']
-
     elenv = ElopConf(icd_path=str(parsed_input.icd),
-                     sch_path=str(parsed_input.sccd),
-                     ssm_conf_path=str(parsed_input.ssmc),
+                    sch_path=str(parsed_input.sccd),
+                    ssm_conf_path=str(parsed_input.ssmc),
                     )
+    f_name = gd['feature']['name']
     
-    steps = get_collected_steps(gd['feature']['children'][0]['scenario'], map['g2p'])
-    ad_model = AD_Model(
-        elenv=elenv,
-        title=out_f,
-        steps=steps,
-        img_name=out_f,
-        out_dir=parsed_input.outdir,
-        **map['labels'],
-        )
+    #Loop on scenarios
+    for scenario_gh in gd['feature']['children']:
+        scenario_gh = scenario_gh['scenario']
+        i = 0
+        for scenario in get_scenario_list(scenario_gh):
+            steps = get_collected_steps(scenario, map['g2p'])
+            s_name = f"{scenario['name']} [S:{i}]"
+            title = f"{f_name}:\\n{s_name}"
+            ad_model = AD_Model(
+                elenv=elenv,
+                title=title,
+                steps=steps,
+                img_name=s_name,
+                out_dir=parsed_input.outdir,
+                **map['labels'],
+                )
 
-    ad_model.export_puml()
+            ad_model.export_puml()
+            i += 1
 
 if __name__ == '__main__':
     sys.argv = "python --map C:/Users/CMM2OFO/Documents/Repos/G2Puml/src/maps/ad_data_flow.yaml --src C:/Users/CMM2OFO/Documents/Repos/G2Puml/test_files/demo.feature --icd C:/Users/CMM2OFO/Downloads/exportx.csv --sccd C:/Users/CMM2OFO/Documents/Repos/G2Puml/Strategy2.yaml --ssmc C:/Users/CMM2OFO/Documents/Repos/G2Puml/test_files/ssm_conf.yaml --outdir C:/Users/CMM2OFO/Documents/".split()

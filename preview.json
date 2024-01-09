@@ -1,0 +1,407 @@
+{
+   "feature": {
+      "tags": [],
+      "location": {
+         "line": 1,
+         "column": 1
+      },
+      "language": "en",
+      "keyword": "Feature",
+      "name": "Temperature impact on software",
+      "description": "",
+      "children": [
+         {
+            "scenario": {
+               "id": "17",
+               "tags": [],
+               "location": {
+                  "line": 3,
+                  "column": 5
+               },
+               "keyword": "Scenario Outline",
+               "name": "Temperature error evaluation from MICRO temperature signal",
+               "description": "        \"\"\"In this scenario is described how the temperature error is generated from the value measured from the MCU and when it is evaluated by the SSM Core\"\"\"",
+               "steps": [
+                  {
+                     "id": "0",
+                     "location": {
+                        "line": 6,
+                        "column": 9
+                     },
+                     "keyword": "Given ",
+                     "keywordType": "Context",
+                     "text": "the Scheduler Task Configuration during the <state> state"
+                  },
+                  {
+                     "id": "1",
+                     "location": {
+                        "line": 7,
+                        "column": 9
+                     },
+                     "keyword": "When ",
+                     "keywordType": "Action",
+                     "text": "the Temperature Measurement reads the RAW_MICRO_TEMPERATURE signal"
+                  },
+                  {
+                     "id": "2",
+                     "location": {
+                        "line": 8,
+                        "column": 9
+                     },
+                     "keyword": "Then ",
+                     "keywordType": "Outcome",
+                     "text": "it shall evaluate the MICRO_TEMPERATURE signal"
+                  },
+                  {
+                     "id": "3",
+                     "location": {
+                        "line": 9,
+                        "column": 9
+                     },
+                     "keyword": "When ",
+                     "keywordType": "Action",
+                     "text": "the Temperature Monitoring reads the MICRO_TEMPERATURE signal"
+                  },
+                  {
+                     "id": "4",
+                     "location": {
+                        "line": 10,
+                        "column": 9
+                     },
+                     "keyword": "Then ",
+                     "keywordType": "Outcome",
+                     "text": "it shall evaluate the ERROR_OVERTEMPERATURE signal"
+                  },
+                  {
+                     "id": "5",
+                     "location": {
+                        "line": 11,
+                        "column": 9
+                     },
+                     "keyword": "When ",
+                     "keywordType": "Action",
+                     "text": "the SSM Core reads the ERROR_OVERTEMPERATURE signal"
+                  },
+                  {
+                     "id": "6",
+                     "location": {
+                        "line": 12,
+                        "column": 9
+                     },
+                     "keyword": "Then ",
+                     "keywordType": "Outcome",
+                     "text": "it shall evaluate the ACS.STATE signal"
+                  }
+               ],
+               "examples": [
+                  {
+                     "id": "16",
+                     "tags": [],
+                     "location": {
+                        "line": 14,
+                        "column": 9
+                     },
+                     "keyword": "Scenarios",
+                     "name": "",
+                     "description": "",
+                     "tableHeader": {
+                        "id": "7",
+                        "location": {
+                           "line": 15,
+                           "column": 13
+                        },
+                        "cells": [
+                           {
+                              "location": {
+                                 "line": 15,
+                                 "column": 17
+                              },
+                              "value": "state"
+                           },
+                           {
+                              "location": {
+                                 "line": 15,
+                                 "column": 45
+                              },
+                              "value": "stateN"
+                           }
+                        ]
+                     },
+                     "tableBody": [
+                        {
+                           "id": "8",
+                           "location": {
+                              "line": 16,
+                              "column": 13
+                           },
+                           "cells": [
+                              {
+                                 "location": {
+                                    "line": 16,
+                                    "column": 17
+                                 },
+                                 "value": "SSM.OPM.CONTROL"
+                              },
+                              {
+                                 "location": {
+                                    "line": 16,
+                                    "column": 42
+                                 },
+                                 "value": "0"
+                              }
+                           ]
+                        },
+                        {
+                           "id": "9",
+                           "location": {
+                              "line": 17,
+                              "column": 13
+                           },
+                           "cells": [
+                              {
+                                 "location": {
+                                    "line": 17,
+                                    "column": 17
+                                 },
+                                 "value": "SSM.OPM_RCV.MCU"
+                              },
+                              {
+                                 "location": {
+                                    "line": 17,
+                                    "column": 42
+                                 },
+                                 "value": "1"
+                              }
+                           ]
+                        },
+                        {
+                           "id": "10",
+                           "location": {
+                              "line": 18,
+                              "column": 13
+                           },
+                           "cells": [
+                              {
+                                 "location": {
+                                    "line": 18,
+                                    "column": 17
+                                 },
+                                 "value": "SSM.OPM_RCV.COMM"
+                              },
+                              {
+                                 "location": {
+                                    "line": 18,
+                                    "column": 39
+                                 },
+                                 "value": "2"
+                              }
+                           ]
+                        },
+                        {
+                           "id": "11",
+                           "location": {
+                              "line": 19,
+                              "column": 13
+                           },
+                           "cells": [
+                              {
+                                 "location": {
+                                    "line": 19,
+                                    "column": 17
+                                 },
+                                 "value": "SSM.OPM_RCV.ROTOR_BLOCK"
+                              },
+                              {
+                                 "location": {
+                                    "line": 19,
+                                    "column": 45
+                                 },
+                                 "value": "3"
+                              }
+                           ]
+                        },
+                        {
+                           "id": "12",
+                           "location": {
+                              "line": 20,
+                              "column": 13
+                           },
+                           "cells": [
+                              {
+                                 "location": {
+                                    "line": 20,
+                                    "column": 17
+                                 },
+                                 "value": "SSM.OPM_RCV.ROTOR_POS"
+                              },
+                              {
+                                 "location": {
+                                    "line": 20,
+                                    "column": 43
+                                 },
+                                 "value": "4"
+                              }
+                           ]
+                        },
+                        {
+                           "id": "13",
+                           "location": {
+                              "line": 21,
+                              "column": 13
+                           },
+                           "cells": [
+                              {
+                                 "location": {
+                                    "line": 21,
+                                    "column": 17
+                                 },
+                                 "value": "SSM.OPM_RCV.TEMP"
+                              },
+                              {
+                                 "location": {
+                                    "line": 21,
+                                    "column": 39
+                                 },
+                                 "value": "5"
+                              }
+                           ]
+                        },
+                        {
+                           "id": "14",
+                           "location": {
+                              "line": 22,
+                              "column": 13
+                           },
+                           "cells": [
+                              {
+                                 "location": {
+                                    "line": 22,
+                                    "column": 17
+                                 },
+                                 "value": "SSM.OPM_RCV.DERATING"
+                              },
+                              {
+                                 "location": {
+                                    "line": 22,
+                                    "column": 42
+                                 },
+                                 "value": "6"
+                              }
+                           ]
+                        },
+                        {
+                           "id": "15",
+                           "location": {
+                              "line": 23,
+                              "column": 13
+                           },
+                           "cells": [
+                              {
+                                 "location": {
+                                    "line": 23,
+                                    "column": 17
+                                 },
+                                 "value": "SSM.OPM_RCV.SPEED"
+                              },
+                              {
+                                 "location": {
+                                    "line": 23,
+                                    "column": 40
+                                 },
+                                 "value": "7"
+                              }
+                           ]
+                        }
+                     ]
+                  }
+               ]
+            }
+         },
+         {
+            "scenario": {
+               "id": "24",
+               "tags": [],
+               "location": {
+                  "line": 25,
+                  "column": 5
+               },
+               "keyword": "Scenario",
+               "name": "Overtemperature scenario",
+               "description": "        \"\"\"\n        In this scenario is described the reaction of the SSM to an overtemperature situation\n        \"\"\"",
+               "steps": [
+                  {
+                     "id": "18",
+                     "location": {
+                        "line": 30,
+                        "column": 9
+                     },
+                     "keyword": "Given ",
+                     "keywordType": "Context",
+                     "text": "the Scheduler Task Configuration during the SSM.OPM.DEFAULT state"
+                  },
+                  {
+                     "id": "19",
+                     "location": {
+                        "line": 31,
+                        "column": 9
+                     },
+                     "keyword": "And ",
+                     "keywordType": "Conjunction",
+                     "text": "the MICRO_TEMPERATURE signal equal to ECU_OVERTEMP_UP_TRESHOLD from the last ECU_OVERTEMP_ERROR_TRIGGER_TIME seconds"
+                  },
+                  {
+                     "id": "20",
+                     "location": {
+                        "line": 32,
+                        "column": 9
+                     },
+                     "keyword": "When ",
+                     "keywordType": "Action",
+                     "text": "the Temperature Monitoring reads the MICRO_TEMPERATURE signal"
+                  },
+                  {
+                     "id": "21",
+                     "location": {
+                        "line": 33,
+                        "column": 9
+                     },
+                     "keyword": "Then ",
+                     "keywordType": "Outcome",
+                     "text": "it shall set the ERROR_OVERTEMPERATURE signal equal to TRUE"
+                  },
+                  {
+                     "id": "22",
+                     "location": {
+                        "line": 34,
+                        "column": 9
+                     },
+                     "keyword": "When ",
+                     "keywordType": "Action",
+                     "text": "the SSM Core reads the ERROR_OVERTEMPERATURE signal"
+                  },
+                  {
+                     "id": "23",
+                     "location": {
+                        "line": 35,
+                        "column": 9
+                     },
+                     "keyword": "Then ",
+                     "keywordType": "Outcome",
+                     "text": "it shall set the ACS.STATE signal equal to SSM.OPM_REC.TEMP",
+                     "docString": {
+                        "location": {
+                           "line": 36,
+                           "column": 9
+                        },
+                        "content": "The SSM is now in the Operation Mode Recovery state for the overtemperature",
+                        "delimiter": "\"\"\""
+                     }
+                  }
+               ],
+               "examples": []
+            }
+         }
+      ]
+   },
+   "comments": []
+}

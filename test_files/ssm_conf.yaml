@@ -1,5 +1,90 @@
 OPM:
-    DEFAULT:
+    CONTROL:
+        Task_1:
+            SSM Core: ND
+        Task_2:
+            null
+        Task_3:
+            null
+        Task_4:
+            null
+        Task_5:
+            Temperature Measurement: ND
+            Temperature Monitoring: ND
+OPM_RCV:
+    MCU:
+        Task_1:
+            SSM Core: ND
+        Task_2:
+            null
+        Task_3:
+            null
+        Task_4:
+            null
+        Task_5:
+            Temperature Measurement: ND
+            Temperature Monitoring: ND
+    COMM:
+        Task_1:
+            SSM Core: ND
+        Task_2:
+            null
+        Task_3:
+            null
+        Task_4:
+            null
+        Task_5:
+            Temperature Measurement: ND
+            Temperature Monitoring: ND
+    ROTOR_BLOCK:
+        Task_1:
+            SSM Core: ND
+        Task_2:
+            null
+        Task_3:
+            null
+        Task_4:
+            null
+        Task_5:
+            Temperature Measurement: ND
+            Temperature Monitoring: ND
+    ROTOR_POS:
+        Task_1:
+            SSM Core: ND
+        Task_2:
+            null
+        Task_3:
+            null
+        Task_4:
+            null
+        Task_5:
+            Temperature Measurement: ND
+            Temperature Monitoring: ND
+    TEMP:
+        Task_1:
+            SSM Core: ND
+        Task_2:
+            null
+        Task_3:
+            null
+        Task_4:
+            null
+        Task_5:
+            Temperature Measurement: ND
+            Temperature Monitoring: ND
+    DERATING:
+        Task_1:
+            SSM Core: ND
+        Task_2:
+            null
+        Task_3:
+            null
+        Task_4:
+            null
+        Task_5:
+            Temperature Measurement: ND
+            Temperature Monitoring: ND
+    SPEED:
         Task_1:
             SSM Core: ND
         Task_2:

@@ -1,0 +1,752 @@
+[
+  [
+    {
+      "id": "17",
+      "tags": [],
+      "location": {
+        "line": 3,
+        "column": 5
+      },
+      "keyword": "Scenario Outline",
+      "name": "Temperature error evaluation from MICRO temperature signal",
+      "description": "        \"\"\"In this scenario is described how the temperature error is generated from the value measured from the MCU and when it is evaluated by the SSM Core\"\"\"",
+      "steps": [
+        {
+          "id": "0",
+          "location": {
+            "line": 6,
+            "column": 9
+          },
+          "keyword": "Given ",
+          "keywordType": "Context",
+          "text": "the Scheduler Task Configuration during the SSM.OPM.CONTROL state"
+        },
+        {
+          "id": "1",
+          "location": {
+            "line": 7,
+            "column": 9
+          },
+          "keyword": "When ",
+          "keywordType": "Action",
+          "text": "the Temperature Measurement reads the RAW_MICRO_TEMPERATURE signal"
+        },
+        {
+          "id": "2",
+          "location": {
+            "line": 8,
+            "column": 9
+          },
+          "keyword": "Then ",
+          "keywordType": "Outcome",
+          "text": "it shall evaluate the MICRO_TEMPERATURE signal"
+        },
+        {
+          "id": "3",
+          "location": {
+            "line": 9,
+            "column": 9
+          },
+          "keyword": "When ",
+          "keywordType": "Action",
+          "text": "the Temperature Monitoring reads the MICRO_TEMPERATURE signal"
+        },
+        {
+          "id": "4",
+          "location": {
+            "line": 10,
+            "column": 9
+          },
+          "keyword": "Then ",
+          "keywordType": "Outcome",
+          "text": "it shall evaluate the ERROR_OVERTEMPERATURE signal"
+        },
+        {
+          "id": "5",
+          "location": {
+            "line": 11,
+            "column": 9
+          },
+          "keyword": "When ",
+          "keywordType": "Action",
+          "text": "the SSM Core reads the ERROR_OVERTEMPERATURE signal"
+        },
+        {
+          "id": "6",
+          "location": {
+            "line": 12,
+            "column": 9
+          },
+          "keyword": "Then ",
+          "keywordType": "Outcome",
+          "text": "it shall evaluate the ACS.STATE signal"
+        }
+      ]
+    },
+    {
+      "id": "17",
+      "tags": [],
+      "location": {
+        "line": 3,
+        "column": 5
+      },
+      "keyword": "Scenario Outline",
+      "name": "Temperature error evaluation from MICRO temperature signal",
+      "description": "        \"\"\"In this scenario is described how the temperature error is generated from the value measured from the MCU and when it is evaluated by the SSM Core\"\"\"",
+      "steps": [
+        {
+          "id": "0",
+          "location": {
+            "line": 6,
+            "column": 9
+          },
+          "keyword": "Given ",
+          "keywordType": "Context",
+          "text": "the Scheduler Task Configuration during the SSM.OPM_RCV.MCU state"
+        },
+        {
+          "id": "1",
+          "location": {
+            "line": 7,
+            "column": 9
+          },
+          "keyword": "When ",
+          "keywordType": "Action",
+          "text": "the Temperature Measurement reads the RAW_MICRO_TEMPERATURE signal"
+        },
+        {
+          "id": "2",
+          "location": {
+            "line": 8,
+            "column": 9
+          },
+          "keyword": "Then ",
+          "keywordType": "Outcome",
+          "text": "it shall evaluate the MICRO_TEMPERATURE signal"
+        },
+        {
+          "id": "3",
+          "location": {
+            "line": 9,
+            "column": 9
+          },
+          "keyword": "When ",
+          "keywordType": "Action",
+          "text": "the Temperature Monitoring reads the MICRO_TEMPERATURE signal"
+        },
+        {
+          "id": "4",
+          "location": {
+            "line": 10,
+            "column": 9
+          },
+          "keyword": "Then ",
+          "keywordType": "Outcome",
+          "text": "it shall evaluate the ERROR_OVERTEMPERATURE signal"
+        },
+        {
+          "id": "5",
+          "location": {
+            "line": 11,
+            "column": 9
+          },
+          "keyword": "When ",
+          "keywordType": "Action",
+          "text": "the SSM Core reads the ERROR_OVERTEMPERATURE signal"
+        },
+        {
+          "id": "6",
+          "location": {
+            "line": 12,
+            "column": 9
+          },
+          "keyword": "Then ",
+          "keywordType": "Outcome",
+          "text": "it shall evaluate the ACS.STATE signal"
+        }
+      ]
+    },
+    {
+      "id": "17",
+      "tags": [],
+      "location": {
+        "line": 3,
+        "column": 5
+      },
+      "keyword": "Scenario Outline",
+      "name": "Temperature error evaluation from MICRO temperature signal",
+      "description": "        \"\"\"In this scenario is described how the temperature error is generated from the value measured from the MCU and when it is evaluated by the SSM Core\"\"\"",
+      "steps": [
+        {
+          "id": "0",
+          "location": {
+            "line": 6,
+            "column": 9
+          },
+          "keyword": "Given ",
+          "keywordType": "Context",
+          "text": "the Scheduler Task Configuration during the SSM.OPM_RCV.COMM state"
+        },
+        {
+          "id": "1",
+          "location": {
+            "line": 7,
+            "column": 9
+          },
+          "keyword": "When ",
+          "keywordType": "Action",
+          "text": "the Temperature Measurement reads the RAW_MICRO_TEMPERATURE signal"
+        },
+        {
+          "id": "2",
+          "location": {
+            "line": 8,
+            "column": 9
+          },
+          "keyword": "Then ",
+          "keywordType": "Outcome",
+          "text": "it shall evaluate the MICRO_TEMPERATURE signal"
+        },
+        {
+          "id": "3",
+          "location": {
+            "line": 9,
+            "column": 9
+          },
+          "keyword": "When ",
+          "keywordType": "Action",
+          "text": "the Temperature Monitoring reads the MICRO_TEMPERATURE signal"
+        },
+        {
+          "id": "4",
+          "location": {
+            "line": 10,
+            "column": 9
+          },
+          "keyword": "Then ",
+          "keywordType": "Outcome",
+          "text": "it shall evaluate the ERROR_OVERTEMPERATURE signal"
+        },
+        {
+          "id": "5",
+          "location": {
+            "line": 11,
+            "column": 9
+          },
+          "keyword": "When ",
+          "keywordType": "Action",
+          "text": "the SSM Core reads the ERROR_OVERTEMPERATURE signal"
+        },
+        {
+          "id": "6",
+          "location": {
+            "line": 12,
+            "column": 9
+          },
+          "keyword": "Then ",
+          "keywordType": "Outcome",
+          "text": "it shall evaluate the ACS.STATE signal"
+        }
+      ]
+    },
+    {
+      "id": "17",
+      "tags": [],
+      "location": {
+        "line": 3,
+        "column": 5
+      },
+      "keyword": "Scenario Outline",
+      "name": "Temperature error evaluation from MICRO temperature signal",
+      "description": "        \"\"\"In this scenario is described how the temperature error is generated from the value measured from the MCU and when it is evaluated by the SSM Core\"\"\"",
+      "steps": [
+        {
+          "id": "0",
+          "location": {
+            "line": 6,
+            "column": 9
+          },
+          "keyword": "Given ",
+          "keywordType": "Context",
+          "text": "the Scheduler Task Configuration during the SSM.OPM_RCV.ROTOR_BLOCK state"
+        },
+        {
+          "id": "1",
+          "location": {
+            "line": 7,
+            "column": 9
+          },
+          "keyword": "When ",
+          "keywordType": "Action",
+          "text": "the Temperature Measurement reads the RAW_MICRO_TEMPERATURE signal"
+        },
+        {
+          "id": "2",
+          "location": {
+            "line": 8,
+            "column": 9
+          },
+          "keyword": "Then ",
+          "keywordType": "Outcome",
+          "text": "it shall evaluate the MICRO_TEMPERATURE signal"
+        },
+        {
+          "id": "3",
+          "location": {
+            "line": 9,
+            "column": 9
+          },
+          "keyword": "When ",
+          "keywordType": "Action",
+          "text": "the Temperature Monitoring reads the MICRO_TEMPERATURE signal"
+        },
+        {
+          "id": "4",
+          "location": {
+            "line": 10,
+            "column": 9
+          },
+          "keyword": "Then ",
+          "keywordType": "Outcome",
+          "text": "it shall evaluate the ERROR_OVERTEMPERATURE signal"
+        },
+        {
+          "id": "5",
+          "location": {
+            "line": 11,
+            "column": 9
+          },
+          "keyword": "When ",
+          "keywordType": "Action",
+          "text": "the SSM Core reads the ERROR_OVERTEMPERATURE signal"
+        },
+        {
+          "id": "6",
+          "location": {
+            "line": 12,
+            "column": 9
+          },
+          "keyword": "Then ",
+          "keywordType": "Outcome",
+          "text": "it shall evaluate the ACS.STATE signal"
+        }
+      ]
+    },
+    {
+      "id": "17",
+      "tags": [],
+      "location": {
+        "line": 3,
+        "column": 5
+      },
+      "keyword": "Scenario Outline",
+      "name": "Temperature error evaluation from MICRO temperature signal",
+      "description": "        \"\"\"In this scenario is described how the temperature error is generated from the value measured from the MCU and when it is evaluated by the SSM Core\"\"\"",
+      "steps": [
+        {
+          "id": "0",
+          "location": {
+            "line": 6,
+            "column": 9
+          },
+          "keyword": "Given ",
+          "keywordType": "Context",
+          "text": "the Scheduler Task Configuration during the SSM.OPM_RCV.ROTOR_POS state"
+        },
+        {
+          "id": "1",
+          "location": {
+            "line": 7,
+            "column": 9
+          },
+          "keyword": "When ",
+          "keywordType": "Action",
+          "text": "the Temperature Measurement reads the RAW_MICRO_TEMPERATURE signal"
+        },
+        {
+          "id": "2",
+          "location": {
+            "line": 8,
+            "column": 9
+          },
+          "keyword": "Then ",
+          "keywordType": "Outcome",
+          "text": "it shall evaluate the MICRO_TEMPERATURE signal"
+        },
+        {
+          "id": "3",
+          "location": {
+            "line": 9,
+            "column": 9
+          },
+          "keyword": "When ",
+          "keywordType": "Action",
+          "text": "the Temperature Monitoring reads the MICRO_TEMPERATURE signal"
+        },
+        {
+          "id": "4",
+          "location": {
+            "line": 10,
+            "column": 9
+          },
+          "keyword": "Then ",
+          "keywordType": "Outcome",
+          "text": "it shall evaluate the ERROR_OVERTEMPERATURE signal"
+        },
+        {
+          "id": "5",
+          "location": {
+            "line": 11,
+            "column": 9
+          },
+          "keyword": "When ",
+          "keywordType": "Action",
+          "text": "the SSM Core reads the ERROR_OVERTEMPERATURE signal"
+        },
+        {
+          "id": "6",
+          "location": {
+            "line": 12,
+            "column": 9
+          },
+          "keyword": "Then ",
+          "keywordType": "Outcome",
+          "text": "it shall evaluate the ACS.STATE signal"
+        }
+      ]
+    },
+    {
+      "id": "17",
+      "tags": [],
+      "location": {
+        "line": 3,
+        "column": 5
+      },
+      "keyword": "Scenario Outline",
+      "name": "Temperature error evaluation from MICRO temperature signal",
+      "description": "        \"\"\"In this scenario is described how the temperature error is generated from the value measured from the MCU and when it is evaluated by the SSM Core\"\"\"",
+      "steps": [
+        {
+          "id": "0",
+          "location": {
+            "line": 6,
+            "column": 9
+          },
+          "keyword": "Given ",
+          "keywordType": "Context",
+          "text": "the Scheduler Task Configuration during the SSM.OPM_RCV.TEMP state"
+        },
+        {
+          "id": "1",
+          "location": {
+            "line": 7,
+            "column": 9
+          },
+          "keyword": "When ",
+          "keywordType": "Action",
+          "text": "the Temperature Measurement reads the RAW_MICRO_TEMPERATURE signal"
+        },
+        {
+          "id": "2",
+          "location": {
+            "line": 8,
+            "column": 9
+          },
+          "keyword": "Then ",
+          "keywordType": "Outcome",
+          "text": "it shall evaluate the MICRO_TEMPERATURE signal"
+        },
+        {
+          "id": "3",
+          "location": {
+            "line": 9,
+            "column": 9
+          },
+          "keyword": "When ",
+          "keywordType": "Action",
+          "text": "the Temperature Monitoring reads the MICRO_TEMPERATURE signal"
+        },
+        {
+          "id": "4",
+          "location": {
+            "line": 10,
+            "column": 9
+          },
+          "keyword": "Then ",
+          "keywordType": "Outcome",
+          "text": "it shall evaluate the ERROR_OVERTEMPERATURE signal"
+        },
+        {
+          "id": "5",
+          "location": {
+            "line": 11,
+            "column": 9
+          },
+          "keyword": "When ",
+          "keywordType": "Action",
+          "text": "the SSM Core reads the ERROR_OVERTEMPERATURE signal"
+        },
+        {
+          "id": "6",
+          "location": {
+            "line": 12,
+            "column": 9
+          },
+          "keyword": "Then ",
+          "keywordType": "Outcome",
+          "text": "it shall evaluate the ACS.STATE signal"
+        }
+      ]
+    },
+    {
+      "id": "17",
+      "tags": [],
+      "location": {
+        "line": 3,
+        "column": 5
+      },
+      "keyword": "Scenario Outline",
+      "name": "Temperature error evaluation from MICRO temperature signal",
+      "description": "        \"\"\"In this scenario is described how the temperature error is generated from the value measured from the MCU and when it is evaluated by the SSM Core\"\"\"",
+      "steps": [
+        {
+          "id": "0",
+          "location": {
+            "line": 6,
+            "column": 9
+          },
+          "keyword": "Given ",
+          "keywordType": "Context",
+          "text": "the Scheduler Task Configuration during the SSM.OPM_RCV.DERATING state"
+        },
+        {
+          "id": "1",
+          "location": {
+            "line": 7,
+            "column": 9
+          },
+          "keyword": "When ",
+          "keywordType": "Action",
+          "text": "the Temperature Measurement reads the RAW_MICRO_TEMPERATURE signal"
+        },
+        {
+          "id": "2",
+          "location": {
+            "line": 8,
+            "column": 9
+          },
+          "keyword": "Then ",
+          "keywordType": "Outcome",
+          "text": "it shall evaluate the MICRO_TEMPERATURE signal"
+        },
+        {
+          "id": "3",
+          "location": {
+            "line": 9,
+            "column": 9
+          },
+          "keyword": "When ",
+          "keywordType": "Action",
+          "text": "the Temperature Monitoring reads the MICRO_TEMPERATURE signal"
+        },
+        {
+          "id": "4",
+          "location": {
+            "line": 10,
+            "column": 9
+          },
+          "keyword": "Then ",
+          "keywordType": "Outcome",
+          "text": "it shall evaluate the ERROR_OVERTEMPERATURE signal"
+        },
+        {
+          "id": "5",
+          "location": {
+            "line": 11,
+            "column": 9
+          },
+          "keyword": "When ",
+          "keywordType": "Action",
+          "text": "the SSM Core reads the ERROR_OVERTEMPERATURE signal"
+        },
+        {
+          "id": "6",
+          "location": {
+            "line": 12,
+            "column": 9
+          },
+          "keyword": "Then ",
+          "keywordType": "Outcome",
+          "text": "it shall evaluate the ACS.STATE signal"
+        }
+      ]
+    },
+    {
+      "id": "17",
+      "tags": [],
+      "location": {
+        "line": 3,
+        "column": 5
+      },
+      "keyword": "Scenario Outline",
+      "name": "Temperature error evaluation from MICRO temperature signal",
+      "description": "        \"\"\"In this scenario is described how the temperature error is generated from the value measured from the MCU and when it is evaluated by the SSM Core\"\"\"",
+      "steps": [
+        {
+          "id": "0",
+          "location": {
+            "line": 6,
+            "column": 9
+          },
+          "keyword": "Given ",
+          "keywordType": "Context",
+          "text": "the Scheduler Task Configuration during the SSM.OPM_RCV.SPEED state"
+        },
+        {
+          "id": "1",
+          "location": {
+            "line": 7,
+            "column": 9
+          },
+          "keyword": "When ",
+          "keywordType": "Action",
+          "text": "the Temperature Measurement reads the RAW_MICRO_TEMPERATURE signal"
+        },
+        {
+          "id": "2",
+          "location": {
+            "line": 8,
+            "column": 9
+          },
+          "keyword": "Then ",
+          "keywordType": "Outcome",
+          "text": "it shall evaluate the MICRO_TEMPERATURE signal"
+        },
+        {
+          "id": "3",
+          "location": {
+            "line": 9,
+            "column": 9
+          },
+          "keyword": "When ",
+          "keywordType": "Action",
+          "text": "the Temperature Monitoring reads the MICRO_TEMPERATURE signal"
+        },
+        {
+          "id": "4",
+          "location": {
+            "line": 10,
+            "column": 9
+          },
+          "keyword": "Then ",
+          "keywordType": "Outcome",
+          "text": "it shall evaluate the ERROR_OVERTEMPERATURE signal"
+        },
+        {
+          "id": "5",
+          "location": {
+            "line": 11,
+            "column": 9
+          },
+          "keyword": "When ",
+          "keywordType": "Action",
+          "text": "the SSM Core reads the ERROR_OVERTEMPERATURE signal"
+        },
+        {
+          "id": "6",
+          "location": {
+            "line": 12,
+            "column": 9
+          },
+          "keyword": "Then ",
+          "keywordType": "Outcome",
+          "text": "it shall evaluate the ACS.STATE signal"
+        }
+      ]
+    }
+  ],
+  [
+    {
+      "id": "24",
+      "tags": [],
+      "location": {
+        "line": 25,
+        "column": 5
+      },
+      "keyword": "Scenario",
+      "name": "Overtemperature scenario",
+      "description": "        \"\"\"\n        In this scenario is described the reaction of the SSM to an overtemperature situation\n        \"\"\"",
+      "steps": [
+        {
+          "id": "18",
+          "location": {
+            "line": 30,
+            "column": 9
+          },
+          "keyword": "Given ",
+          "keywordType": "Context",
+          "text": "the Scheduler Task Configuration during the SSM.OPM.DEFAULT state"
+        },
+        {
+          "id": "19",
+          "location": {
+            "line": 31,
+            "column": 9
+          },
+          "keyword": "And ",
+          "keywordType": "Conjunction",
+          "text": "the MICRO_TEMPERATURE signal equal to ECU_OVERTEMP_UP_TRESHOLD from the last ECU_OVERTEMP_ERROR_TRIGGER_TIME seconds"
+        },
+        {
+          "id": "20",
+          "location": {
+            "line": 32,
+            "column": 9
+          },
+          "keyword": "When ",
+          "keywordType": "Action",
+          "text": "the Temperature Monitoring reads the MICRO_TEMPERATURE signal"
+        },
+        {
+          "id": "21",
+          "location": {
+            "line": 33,
+            "column": 9
+          },
+          "keyword": "Then ",
+          "keywordType": "Outcome",
+          "text": "it shall set the ERROR_OVERTEMPERATURE signal equal to TRUE"
+        },
+        {
+          "id": "22",
+          "location": {
+            "line": 34,
+            "column": 9
+          },
+          "keyword": "When ",
+          "keywordType": "Action",
+          "text": "the SSM Core reads the ERROR_OVERTEMPERATURE signal"
+        },
+        {
+          "id": "23",
+          "location": {
+            "line": 35,
+            "column": 9
+          },
+          "keyword": "Then ",
+          "keywordType": "Outcome",
+          "text": "it shall set the ACS.STATE signal equal to SSM.OPM_REC.TEMP",
+          "docString": {
+            "location": {
+              "line": 36,
+              "column": 9
+            },
+            "content": "The SSM is now in the Operation Mode Recovery state for the overtemperature",
+            "delimiter": "\"\"\""
+          }
+        }
+      ],
+      "examples": []
+    }
+  ]
+]

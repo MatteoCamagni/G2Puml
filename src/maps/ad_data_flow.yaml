@@ -5,7 +5,9 @@ labels:
 g2p:
   Given:
     g1: 'the (?P<runner>.*) during the SSM\.(?P<state>\w+)\.(?P<substate>\w+)\sstate'
+    g2: 'the (?P<sgn>[a-zA-Z0-9_\.]+) signal equal to (?P<value>[a-zA-Z0-9_\.]+)(?P<comment>.*)'
   When:
-    w1: 'the (?P<swc>.*) reads the (?P<sgn>\w+) signal'
+    w1: 'the (?P<swc>.*) reads the (?P<sgn>[a-zA-Z0-9_\.]+) signal'
   Then:
-    t1: 'it shall (evaluate the (?P<sgn>\w+) signal)|(execute the (?P<cmd>\w+) command)'
+    t1: 'it shall (evaluate the (?P<sgn>[a-zA-Z0-9_\.]+) signal)|(execute the (?P<cmd>\w+) command)'
+    t2: 'it shall set the (?P<sgn>[a-zA-Z0-9_\.]+) signal equal to (?P<value>[a-zA-Z0-9_\.]+)'
