@@ -167,7 +167,7 @@ class Model():
             footer =self._get_puml_footer(),
         )
     
-    def export_puml(self) -> None:
+    def export_puml(self, export_puml: bool) -> None:
         puml = plantuml.PlantUML(url=RENDER_URL)
         a = self._get_plant_uml()
         img_url = puml.get_url(a)
@@ -175,8 +175,9 @@ class Model():
         with self._img_name.with_suffix(".png").open('wb') as handler:
             handler.write(img_data)
             print('%sExported sequence diagram%s: %s' % (CLR.green, CLR.close, self._img_name.with_suffix(".png")))
-        with self._img_name.with_suffix(".puml").open('w') as handler:
-            handler.write(a)
+        if export_puml:
+            with self._img_name.with_suffix(".puml").open('w') as handler:
+                handler.write(a)
 
 class AD_Model(Model):
 
@@ -550,7 +551,9 @@ def get_args() -> argparse.Namespace:
                         help="SSM configuration")
     parser.add_argument('--outdir', type=get_existing_dir, required=True, 
                         help="Output directory")
-    
+    parser.add_argument('--puml', type=bool, required=False, default=False,
+                        help="Export plant uml files")
+        
     return parser.parse_args()
 
 def get_map(path: Path) -> dict:
@@ -627,10 +630,10 @@ def main():
     #Loop on scenarios
     for scenario_gh in gd['feature']['children']:
         scenario_gh = scenario_gh['scenario']
-        i = 0
+        i = 1
         for scenario in get_scenario_list(scenario_gh):
             steps = get_collected_steps(scenario, map['g2p'])
-            s_name = f"{scenario['name']} [S:{i}]"
+            s_name = f"{scenario['name']} [V:{i}]"
             title = f"{f_name}:\\n{s_name}"
             ad_model = AD_Model(
                 elenv=elenv,
@@ -641,7 +644,7 @@ def main():
                 **map['labels'],
                 )
 
-            ad_model.export_puml()
+            ad_model.export_puml(export_puml=parsed_input.puml)
             i += 1
 
 if __name__ == '__main__':
